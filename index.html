@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Drive Video Player</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 900px;
+            width: 100%;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        
+        .player-container {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+        }
+        
+        .video-container {
+            position: relative;
+            width: 100%;
+            height: 0;
+            padding-bottom: 56.25%; /* 16:9 aspect ratio */
+            border-radius: 10px;
+            overflow: hidden;
+            background: #000;
+            margin-bottom: 20px;
+        }
+        
+        .video-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        
+        .fallback-message {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .fallback-options {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        .fallback-btn {
+            background: #4dabf7;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .fallback-btn:hover {
+            background: #339af0;
+            transform: translateY(-2px);
+        }
+        
+        .video-info {
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .video-title {
+            font-size: 1.5rem;
+            margin-bottom: 5px;
+        }
+        
+        .video-description {
+            opacity: 0.8;
+            font-size: 0.9rem;
+        }
+        
+        .video-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .video-item {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .video-item:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-3px);
+        }
+        
+        .video-item.active {
+            background: rgba(77, 171, 247, 0.3);
+            border: 1px solid #4dabf7;
+        }
+        
+        .video-thumb {
+            width: 100%;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 5px;
+            margin-bottom: 8px;
+        }
+        
+        .video-title-small {
+            font-size: 0.9rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 15px;
+        }
+        
+        button {
+            background: #4dabf7;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        button:hover {
+            background: #339af0;
+            transform: translateY(-2px);
+        }
+        
+        button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 30px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            font-size: 0.9rem;
+            opacity: 0.8;
+            width: 100%;
+        }
+        
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .video-list {
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            }
+            
+            .fallback-options {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Google Drive Video Player</h1>
+            <p class="subtitle">Simple player for your Drive videos</p>
+        </header>
+        
+        <div class="player-container">
+            <div class="video-container">
+                <iframe id="videoPlayer" src="" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+                <div class="fallback-message" id="fallbackMessage">
+                    <h3>Preview Not Available</h3>
+                    <p>This video cannot be previewed directly. Try one of these options:</p>
+                    <div class="fallback-options">
+                        <button class="fallback-btn" id="openInDrive">Open in Google Drive</button>
+                        <button class="fallback-btn" id="downloadVideo">Download Video</button>
+                        <button class="fallback-btn" id="tryAlternative">Try Alternative Player</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="video-info">
+                <div class="video-title" id="currentVideoTitle">Select a video to play</div>
+                <div class="video-description" id="currentVideoDescription">Choose from the playlist below</div>
+            </div>
+            
+            <div class="controls">
+                <button id="prevBtn" disabled>Previous</button>
+                <button id="nextBtn">Next</button>
+            </div>
+            
+            <h3>Video Playlist</h3>
+            <div class="video-list" id="videoList">
+                <!-- Video list will be generated by JavaScript -->
+            </div>
+        </div>
+        
+        <footer>
+            <p>Google Drive Video Player &copy; 2023 | Works with publicly shared Google Drive videos</p>
+        </footer>
+    </div>
+
+    <script>
+        // Replace these with your actual Google Drive video IDs and titles
+        const videos = [
+            { 
+                id: "1mJ6Hb00AEVZsKs6ZMNWM1fx3A9XIW3zi", 
+                title: "Start Part 1",
+                description: "Introduction video"
+            }
+            // Add more videos as needed:
+            // { id: "YOUR_VIDEO_ID", title: "Video Title", description: "Video description" },
+        ];
+        
+        let currentVideoIndex = 0;
+        let currentVideoId = "";
+        
+        // Function to load a video by index
+        function loadVideo(index) {
+            if (index >= 0 && index < videos.length) {
+                currentVideoIndex = index;
+                const video = videos[index];
+                currentVideoId = video.id;
+                
+                // Hide fallback message initially
+                document.getElementById('fallbackMessage').style.display = 'none';
+                
+                // Use Google Drive's embed URL
+                const embedUrl = `https://drive.google.com/file/d/${video.id}/preview`;
+                
+                document.getElementById('videoPlayer').src = embedUrl;
+                document.getElementById('currentVideoTitle').textContent = video.title;
+                document.getElementById('currentVideoDescription').textContent = video.description;
+                
+                // Set up fallback options
+                setupFallbackOptions(video.id, video.title);
+                
+                // Update active state in video list
+                document.querySelectorAll('.video-item').forEach((item, i) => {
+                    if (i === index) {
+                        item.classList.add('active');
+                    } else {
+                        item.classList.remove('active');
+                    }
+                });
+                
+                // Update button states
+                document.getElementById('prevBtn').disabled = index === 0;
+                document.getElementById('nextBtn').disabled = index === videos.length - 1;
+                
+                // Check if preview is available after a delay
+                setTimeout(checkPreviewAvailability, 3000);
+            }
+        }
+        
+        // Function to check if preview is available
+        function checkPreviewAvailability() {
+            const iframe = document.getElementById('videoPlayer');
+            try {
+                // Try to access iframe content (this might fail due to CORS)
+                if (iframe.contentDocument && iframe.contentDocument.body) {
+                    const bodyText = iframe.contentDocument.body.innerText || '';
+                    if (bodyText.includes('preview') && 
+                       (bodyText.includes('not available') || 
+                        bodyText.includes('unavailable') ||
+                        bodyText.includes('processing'))) {
+                        showFallbackMessage();
+                    }
+                }
+            } catch (e) {
+                // CORS error - we can't check the content, so we'll assume it's working
+                // If there's really a problem, the user will see the fallback message manually
+                console.log("Cannot check iframe content due to CORS policy");
+            }
+        }
+        
+        // Function to show fallback options
+        function showFallbackMessage() {
+            document.getElementById('fallbackMessage').style.display = 'flex';
+        }
+        
+        // Function to setup fallback options
+        function setupFallbackOptions(videoId, videoTitle) {
+            // Open in Google Drive
+            document.getElementById('openInDrive').onclick = function() {
+                window.open(`https://drive.google.com/file/d/${videoId}/view`, '_blank');
+            };
+            
+            // Download video
+            document.getElementById('downloadVideo').onclick = function() {
+                window.open(`https://drive.google.com/uc?export=download&id=${videoId}`, '_blank');
+            };
+            
+            // Try alternative player (using different URL format)
+            document.getElementById('tryAlternative').onclick = function() {
+                const alternativeUrl = `https://drive.google.com/file/d/${videoId}/view?usp=drivesdk`;
+                document.getElementById('videoPlayer').src = alternativeUrl;
+                document.getElementById('fallbackMessage').style.display = 'none';
+            };
+        }
+        
+        // Function to generate video list
+        function generateVideoList() {
+            const videoList = document.getElementById('videoList');
+            videoList.innerHTML = '';
+            
+            videos.forEach((video, index) => {
+                const videoItem = document.createElement('div');
+                videoItem.className = 'video-item';
+                if (index === 0) videoItem.classList.add('active');
+                
+                // Use Google Drive thumbnail
+                const thumbUrl = `https://drive.google.com/thumbnail?id=${video.id}&sz=w200`;
+                
+                videoItem.innerHTML = `
+                    <img class="video-thumb" src="${thumbUrl}" alt="${video.title}" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDIwMCAxMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjIwMCIgaGVpZ2h0PSIxMDAiIGZpbGw9IiMzMzMiLz48cGF0aCBkPSJNNzUgNDBMOTUgNjBMMTI1IDQwIiBzdHJva2U9IiM5OTkiIHN0cm9rZS13aWR0aD0iMiIvPjwvc3ZnPg=='">
+                    <div class="video-title-small">${video.title}</div>
+                `;
+                
+                videoItem.addEventListener('click', () => loadVideo(index));
+                videoList.appendChild(videoItem);
+            });
+        }
+        
+        // Event listeners for buttons
+        document.getElementById('prevBtn').addEventListener('click', () => {
+            if (currentVideoIndex > 0) {
+                loadVideo(currentVideoIndex - 1);
+            }
+        });
+        
+        document.getElementById('nextBtn').addEventListener('click', () => {
+            if (currentVideoIndex < videos.length - 1) {
+                loadVideo(currentVideoIndex + 1);
+            }
+        });
+        
+        // Manually show fallback message if user detects preview not available
+        document.getElementById('videoPlayer').addEventListener('load', function() {
+            // After iframe loads, if user sees "preview not available", 
+            // they can right-click and we'll show the fallback options
+        });
+        
+        // Right-click on iframe to show fallback options
+        document.getElementById('videoPlayer').addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            showFallbackMessage();
+            return false;
+        });
+        
+        // Initialize the player
+        window.onload = function() {
+            generateVideoList();
+            loadVideo(0);
+        };
+    </script>
+</body>
+</html>
