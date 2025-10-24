@@ -1507,218 +1507,6 @@
             opacity: 1;
         }
 
-        /* Enhanced Drive Player Styles */
-        .drive-player-container {
-            position: relative;
-            width: 100%;
-            height: 100%;
-        }
-
-        .drive-player-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.7);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 5;
-            color: white;
-            text-align: center;
-            padding: 20px;
-            border-radius: 20px;
-        }
-
-        .drive-player-actions {
-            display: flex;
-            gap: 12px;
-            margin-top: 20px;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-
-        .drive-action-btn {
-            background: var(--drive);
-            color: white;
-            border: none;
-            padding: 12px 20px;
-            border-radius: 10px;
-            font-size: 0.9rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .drive-action-btn:hover {
-            background: #1e40af;
-            transform: translateY(-2px);
-        }
-
-        .drive-player-info {
-            margin-top: 16px;
-            font-size: 0.9rem;
-            opacity: 0.8;
-            max-width: 400px;
-        }
-
-        .drive-player-loading {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 16px;
-        }
-
-        .drive-player-loading .spinner {
-            width: 40px;
-            height: 40px;
-        }
-
-        /* Enhanced Video Controls */
-        .video-controls {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin: 16px 0;
-            gap: 12px;
-        }
-
-        .playback-controls {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-        }
-
-        .playback-btn {
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            color: var(--light-1);
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .playback-btn:hover {
-            background: rgba(107, 70, 193, 0.2);
-            transform: scale(1.1);
-        }
-
-        .volume-control {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .volume-slider {
-            width: 80px;
-            height: 4px;
-            background: var(--glass-bg);
-            border-radius: 2px;
-            outline: none;
-            -webkit-appearance: none;
-        }
-
-        .volume-slider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            background: var(--primary);
-            cursor: pointer;
-        }
-
-        .progress-container {
-            flex: 1;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .progress-bar {
-            flex: 1;
-            height: 6px;
-            background: var(--glass-bg);
-            border-radius: 3px;
-            overflow: hidden;
-            cursor: pointer;
-        }
-
-        .progress-fill {
-            height: 100%;
-            background: var(--primary);
-            border-radius: 3px;
-            width: 0%;
-            transition: width 0.1s ease;
-        }
-
-        .time-display {
-            font-size: 0.8rem;
-            opacity: 0.8;
-            min-width: 80px;
-            text-align: center;
-        }
-
-        /* Enhanced Video Info */
-        .video-meta {
-            display: flex;
-            gap: 16px;
-            margin-top: 12px;
-            flex-wrap: wrap;
-        }
-
-        .meta-item {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 0.8rem;
-            opacity: 0.8;
-        }
-
-        .meta-item i {
-            color: var(--primary-light);
-        }
-
-        /* Professional Layout Enhancements */
-        .player-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 16px;
-        }
-
-        .player-actions {
-            display: flex;
-            gap: 8px;
-        }
-
-        .action-btn {
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            color: var(--light-1);
-            padding: 8px 16px;
-            border-radius: 8px;
-            font-size: 0.8rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .action-btn:hover {
-            background: rgba(107, 70, 193, 0.2);
-            transform: translateY(-1px);
-        }
-
         @media (max-width: 1200px) {
             .main-content {
                 grid-template-columns: 1fr;
@@ -1786,15 +1574,6 @@
 
             .search-filters {
                 grid-template-columns: 1fr;
-            }
-
-            .video-controls {
-                flex-wrap: wrap;
-            }
-
-            .progress-container {
-                order: -1;
-                width: 100%;
             }
         }
 
@@ -1876,42 +1655,8 @@
 
         <div class="main-content">
             <div class="player-section slide-in-left">
-                <div class="player-header">
-                    <h3><i class="fas fa-play"></i> Now Playing</h3>
-                    <div class="player-actions">
-                        <button class="action-btn" id="fullscreenBtn">
-                            <i class="fas fa-expand"></i> Fullscreen
-                        </button>
-                        <button class="action-btn" id="theaterModeBtn">
-                            <i class="fas fa-film"></i> Theater
-                        </button>
-                    </div>
-                </div>
-
                 <div class="video-container">
-                    <div class="drive-player-container" id="drivePlayerContainer">
-                        <iframe id="videoPlayer" src="" allow="autoplay; encrypted-media" allowfullscreen></iframe>
-                        <div class="drive-player-overlay" id="drivePlayerOverlay">
-                            <div class="drive-player-loading" id="drivePlayerLoading">
-                                <div class="spinner"></div>
-                                <p>Loading Google Drive Video...</p>
-                            </div>
-                            <div class="drive-player-actions" id="drivePlayerActions" style="display: none;">
-                                <button class="drive-action-btn" id="driveOpenOriginal">
-                                    <i class="fas fa-external-link-alt"></i> Open in Drive
-                                </button>
-                                <button class="drive-action-btn" id="driveDownload">
-                                    <i class="fas fa-download"></i> Download
-                                </button>
-                                <button class="drive-action-btn" id="driveTryPreview">
-                                    <i class="fas fa-redo"></i> Retry Preview
-                                </button>
-                            </div>
-                            <div class="drive-player-info" id="drivePlayerInfo">
-                                Some Google Drive videos may require additional permissions to preview.
-                            </div>
-                        </div>
-                    </div>
+                    <iframe id="videoPlayer" src="" allow="autoplay; encrypted-media" allowfullscreen></iframe>
                     <div class="fallback-message" id="fallbackMessage">
                         <h3><i class="fas fa-exclamation-triangle"></i> Preview Not Available</h3>
                         <p>This video cannot be previewed directly. Try one of these options:</p>
@@ -1924,27 +1669,6 @@
                     </div>
                 </div>
 
-                <!-- Enhanced Video Controls -->
-                <div class="video-controls" id="videoControls" style="display: none;">
-                    <div class="playback-controls">
-                        <button class="playback-btn" id="playPauseBtn">
-                            <i class="fas fa-play"></i>
-                        </button>
-                        <button class="playback-btn" id="muteBtn">
-                            <i class="fas fa-volume-up"></i>
-                        </button>
-                        <div class="volume-control">
-                            <input type="range" class="volume-slider" id="volumeSlider" min="0" max="100" value="100">
-                        </div>
-                    </div>
-                    <div class="progress-container">
-                        <div class="progress-bar" id="progressBar">
-                            <div class="progress-fill" id="progressFill"></div>
-                        </div>
-                        <div class="time-display" id="timeDisplay">0:00 / 0:00</div>
-                    </div>
-                </div>
-
                 <div class="video-info">
                     <div class="video-title">
                         <span id="currentVideoTitle">Select a video to play</span>
@@ -1952,20 +1676,6 @@
                     </div>
                     <div class="video-description" id="currentVideoDescription">Choose a video from the playlist or add
                         your own URL to get started with the ultimate video experience.</div>
-                    <div class="video-meta" id="videoMeta">
-                        <div class="meta-item">
-                            <i class="fas fa-clock"></i>
-                            <span id="videoDuration">--:--</span>
-                        </div>
-                        <div class="meta-item">
-                            <i class="fas fa-eye"></i>
-                            <span id="videoViews">0 views</span>
-                        </div>
-                        <div class="meta-item">
-                            <i class="fas fa-calendar"></i>
-                            <span id="videoDate">--</span>
-                        </div>
-                    </div>
                 </div>
 
                 <div class="controls">
@@ -2120,68 +1830,36 @@
     <!-- Font Awesome Library -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <!-- Inject runtime env for browser (served from /env.js) -->
-    <script src="/env.js"></script>
-
     <script>
-        // Professional Airtable Configuration
-        const API_CONFIG = {
-            BASE_URL: 'http://localhost:3000/api',
-            ENDPOINTS: {
-                VIDEOS: '/videos',
-                CONFIG: '/config'
+        // Professional Configuration
+        const CONFIG = {
+            AIRTABLE: {
+                BASE_ID: 'appFZTp4rpbWSdLVO',
+                TABLE_NAME: 'Videos',
+                API_URL: 'https://api.airtable.com/v0'
+            },
+            SEARCH: {
+                DEBOUNCE_DELAY: 300,
+                MIN_SEARCH_LENGTH: 2,
+                MAX_SUGGESTIONS: 8,
+                SEARCH_FIELDS: ['title', 'description', 'type', 'tags', 'category'],
+                CACHE_DURATION: 5 * 60 * 1000,
+                FUZZY_SEARCH: true
             }
         };
 
-        // Secure configuration management
-        const BROWSER_ENV = (typeof window !== 'undefined' && window.__ENV) ? window.__ENV : {};
-        const VIDEO_SERVICE_URL = BROWSER_ENV.VIDEO_SERVICE_URL || '/api/videos';
-        const YOUTUBE_PROXY_URL = BROWSER_ENV.YOUTUBE_PROXY_URL || 'https://your-secure-proxy.com/youtube';
-        const AIRTABLE_API_URL = BROWSER_ENV.AIRTABLE_API_URL || 'https://api.airtable.com/v0';
-        const CORS_PROXY_URL = BROWSER_ENV.CORS_PROXY_URL || 'https://your-secure-proxy.com';
-
-        const CONFIG = {
-            API_ENDPOINTS: {
-                AIRTABLE_API: AIRTABLE_API_URL,
-                YOUTUBE_PROXY: YOUTUBE_PROXY_URL,
-                VIDEO_SERVICE: VIDEO_SERVICE_URL
-            },
-            CORS_PROXY: CORS_PROXY_URL
-        };
-
-        // Professional Search Configuration
-        const SEARCH_CONFIG = {
-            DEBOUNCE_DELAY: 300,
-            MIN_SEARCH_LENGTH: 2,
-            MAX_SUGGESTIONS: 8,
-            SEARCH_FIELDS: ['title', 'description', 'type', 'tags', 'category'],
-            CACHE_DURATION: 5 * 60 * 1000,
-            FUZZY_SEARCH: true,
-            SEARCH_OPERATOR: 'OR'
-        };
-
-        // Enhanced Google Drive Configuration
-        const DRIVE_CONFIG = {
-            PREVIEW_TIMEOUT: 10000,
-            MAX_RETRIES: 3,
-            RETRY_DELAY: 2000,
-            ALTERNATE_URLS: [
-                'https://drive.google.com/file/d/{id}/preview',
-                'https://drive.google.com/uc?id={id}',
-                'https://docs.google.com/uc?export=download&id={id}'
-            ]
-        };
-
-        // Professional Airtable Service Class with enhanced error handling
+        // Professional Airtable Service Class
         class AirtableService {
-            constructor() {
-                this.baseUrl = API_CONFIG.BASE_URL + API_CONFIG.ENDPOINTS.VIDEOS;
+            constructor(apiKey) {
+                this.apiKey = apiKey;
+                this.baseUrl = `${CONFIG.AIRTABLE.API_URL}/${CONFIG.AIRTABLE.BASE_ID}/${CONFIG.AIRTABLE.TABLE_NAME}`;
+                this.headers = {
+                    'Authorization': `Bearer ${this.apiKey}`,
+                    'Content-Type': 'application/json'
+                };
                 this.retryCount = 3;
                 this.retryDelay = 1000;
                 this.cache = new Map();
-                this.headers = {
-                    'Content-Type': 'application/json'
-                };
             }
 
             // Enhanced error handling with retry mechanism
@@ -2191,6 +1869,7 @@
 
                     if (!response.ok) {
                         if (response.status === 429 && retries > 0) {
+                            // Rate limiting - wait and retry
                             await this.delay(this.retryDelay);
                             return this.handleRequest(url, options, retries - 1);
                         }
@@ -2250,7 +1929,7 @@
                 const cacheKey = `search-${JSON.stringify({ query, filters })}`;
                 const cached = this.cache.get(cacheKey);
 
-                if (cached && Date.now() - cached.timestamp < SEARCH_CONFIG.CACHE_DURATION) {
+                if (cached && Date.now() - cached.timestamp < CONFIG.SEARCH.CACHE_DURATION) {
                     return cached.data;
                 }
 
@@ -2258,12 +1937,12 @@
                     let allVideos = await this.getAllVideos();
 
                     // Apply search query
-                    if (query && query.length >= SEARCH_CONFIG.MIN_SEARCH_LENGTH) {
+                    if (query && query.length >= CONFIG.SEARCH.MIN_SEARCH_LENGTH) {
                         const searchTerms = query.toLowerCase().split(' ').filter(term => term.length > 0);
 
                         allVideos = allVideos.filter(video => {
                             return searchTerms.some(term => {
-                                return SEARCH_CONFIG.SEARCH_FIELDS.some(field => {
+                                return CONFIG.SEARCH.SEARCH_FIELDS.some(field => {
                                     const fieldValue = String(video[field] || '').toLowerCase();
                                     return fieldValue.includes(term);
                                 });
@@ -2274,16 +1953,6 @@
                     // Apply filters
                     if (filters.platform && filters.platform !== 'all') {
                         allVideos = allVideos.filter(video => video.type === filters.platform);
-                    }
-
-                    if (filters.duration) {
-                        allVideos = allVideos.filter(video => {
-                            const duration = this.parseDurationToSeconds(video.duration);
-                            if (filters.duration === 'short') return duration > 0 && duration < 300;
-                            if (filters.duration === 'medium') return duration >= 300 && duration <= 900;
-                            if (filters.duration === 'long') return duration > 900;
-                            return true;
-                        });
                     }
 
                     // Cache the result
@@ -2314,14 +1983,8 @@
             // Enhanced addVideo method with duplicate prevention
             async addVideo(video) {
                 try {
-                    // Check for duplicates but don't block on errors
-                    let existingVideo = null;
-                    try {
-                        existingVideo = await this.checkDuplicateVideo(video);
-                    } catch (duplicateError) {
-                        console.warn('Duplicate check failed, proceeding with add:', duplicateError);
-                    }
-
+                    // Check for duplicates
+                    const existingVideo = await this.checkDuplicateVideo(video);
                     if (existingVideo) {
                         throw new Error('This video already exists in your library');
                     }
@@ -2346,7 +2009,7 @@
                     const data = await this.handleRequest(this.baseUrl, {
                         method: 'POST',
                         headers: this.headers,
-                        body: JSON.stringify(record)
+                        body: JSON.stringify({ records: [record] })
                     });
 
                     if (!data.records || data.records.length === 0) {
@@ -2374,14 +2037,7 @@
                     };
                 } catch (error) {
                     console.error('Error adding video to Airtable:', error);
-
-                    if (error.message.includes('already exists')) {
-                        throw error;
-                    } else if (error.message.includes('No record returned')) {
-                        throw new Error('Failed to save video to library. Please try again.');
-                    } else {
-                        throw new Error('Failed to add video: ' + error.message);
-                    }
+                    throw error;
                 }
             }
 
@@ -2393,47 +2049,15 @@
             // Check for duplicate videos
             async checkDuplicateVideo(video) {
                 try {
-                    const normalizeUrl = (url) => {
-                        if (!url) return '';
-                        return url.toLowerCase()
-                            .replace(/https?:\/\//, '')
-                            .replace(/www\./, '')
-                            .replace(/\/$/, '')
-                            .split('?')[0];
-                    };
+                    const filterFormula = `OR({videoId} = "${video.id}", {url} = "${video.url}")`;
+                    const url = `${this.baseUrl}?filterByFormula=${encodeURIComponent(filterFormula)}`;
 
-                    const currentUrl = normalizeUrl(video.url);
-                    const videoId = video.id;
+                    const data = await this.handleRequest(url, {
+                        method: 'GET',
+                        headers: this.headers
+                    });
 
-                    // Check by video ID first (more reliable)
-                    if (videoId) {
-                        const idFilter = `{videoId} = "${videoId.replace(/"/g, '\\"')}"`;
-                        const idUrl = `${this.baseUrl}?filterByFormula=${encodeURIComponent(idFilter)}`;
-
-                        const idResponse = await this.handleRequest(idUrl, {
-                            method: 'GET',
-                            headers: this.headers
-                        });
-
-                        if (idResponse.records && idResponse.records.length > 0) {
-                            return idResponse.records[0];
-                        }
-                    }
-
-                    // Check by normalized URL
-                    if (currentUrl) {
-                        const allVideos = await this.getAllVideos();
-                        const duplicate = allVideos.find(existingVideo => {
-                            const existingUrl = normalizeUrl(existingVideo.url);
-                            return existingUrl === currentUrl;
-                        });
-
-                        if (duplicate) {
-                            return { id: duplicate.id, fields: duplicate };
-                        }
-                    }
-
-                    return null;
+                    return data.records && data.records.length > 0 ? data.records[0] : null;
                 } catch (error) {
                     console.error('Error checking duplicate video:', error);
                     return null;
@@ -2480,8 +2104,8 @@
             }
 
             // Get search suggestions
-            getSuggestions(query, videos, maxResults = SEARCH_CONFIG.MAX_SUGGESTIONS) {
-                if (query.length < SEARCH_CONFIG.MIN_SEARCH_LENGTH) {
+            getSuggestions(query, videos, maxResults = CONFIG.SEARCH.MAX_SUGGESTIONS) {
+                if (query.length < CONFIG.SEARCH.MIN_SEARCH_LENGTH) {
                     return [];
                 }
 
@@ -2566,13 +2190,7 @@
 
                 for (const pattern of patterns) {
                     const match = url.match(pattern);
-                    if (match) return { 
-                        id: match[1], 
-                        type: 'drive',
-                        embedUrl: `https://drive.google.com/file/d/${match[1]}/preview`,
-                        downloadUrl: `https://drive.google.com/uc?export=download&id=${match[1]}`,
-                        viewUrl: `https://drive.google.com/file/d/${match[1]}/view`
-                    };
+                    if (match) return { id: match[1], type: 'drive' };
                 }
                 return null;
             }
@@ -2624,7 +2242,7 @@
             constructor() {
                 this.useFallback = true;
                 this.cache = new Map();
-                this.cacheTimeout = 10 * 60 * 1000;
+                this.cacheTimeout = 10 * 60 * 1000; // 10 minutes
             }
 
             async getVideoData(videoId) {
@@ -2636,11 +2254,8 @@
                 }
 
                 try {
-                    // Use secure backend proxy for YouTube data
-                    const response = await fetch(`${CONFIG.API_ENDPOINTS.YOUTUBE_PROXY}/videos/${videoId}`, {
-                        method: 'GET',
-                        credentials: 'include'
-                    });
+                    // Try oEmbed API first (no API key required)
+                    const response = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`);
 
                     if (response.ok) {
                         const data = await response.json();
@@ -2648,7 +2263,7 @@
                             title: data.title,
                             description: 'Description available on YouTube',
                             thumbnail: data.thumbnail_url,
-                            duration: '--:--'
+                            duration: '--:--' // oEmbed doesn't provide duration
                         };
 
                         this.cache.set(cacheKey, {
@@ -2778,154 +2393,6 @@
             }
         }
 
-        // Enhanced Google Drive Service
-        class DriveVideoService {
-            constructor() {
-                this.previewAttempts = new Map();
-                this.currentDriveVideo = null;
-            }
-
-            // Enhanced Google Drive video handling
-            async loadDriveVideo(video, videoPlayer, drivePlayerOverlay, drivePlayerLoading, drivePlayerActions) {
-                this.currentDriveVideo = video;
-                this.previewAttempts.set(video.id, 0);
-
-                // Show loading state
-                drivePlayerOverlay.style.display = 'flex';
-                drivePlayerLoading.style.display = 'flex';
-                drivePlayerActions.style.display = 'none';
-
-                // Set up the preview URL
-                const previewUrl = video.embedUrl || `https://drive.google.com/file/d/${video.videoId}/preview`;
-                videoPlayer.src = previewUrl;
-
-                // Set up drive-specific actions
-                this.setupDriveActions(video, drivePlayerActions);
-
-                // Start preview check
-                this.checkDrivePreview(video, videoPlayer, drivePlayerOverlay, drivePlayerLoading, drivePlayerActions);
-            }
-
-            // Check if Google Drive preview is working
-            checkDrivePreview(video, videoPlayer, drivePlayerOverlay, drivePlayerLoading, drivePlayerActions) {
-                const attempts = this.previewAttempts.get(video.id) || 0;
-
-                if (attempts >= DRIVE_CONFIG.MAX_RETRIES) {
-                    // Max retries reached, show fallback options
-                    drivePlayerLoading.style.display = 'none';
-                    drivePlayerActions.style.display = 'flex';
-                    return;
-                }
-
-                // Check if iframe has loaded content
-                setTimeout(() => {
-                    try {
-                        // Try to detect if preview is blocked
-                        const iframeDoc = videoPlayer.contentDocument || videoPlayer.contentWindow.document;
-                        const bodyText = iframeDoc.body.innerText || '';
-
-                        if (bodyText.includes('preview') && 
-                            (bodyText.includes('not available') || bodyText.includes('unable to preview'))) {
-                            // Preview is blocked, show fallback
-                            this.handlePreviewFailure(video, videoPlayer, drivePlayerOverlay, drivePlayerLoading, drivePlayerActions);
-                        } else {
-                            // Preview seems to be working
-                            drivePlayerOverlay.style.display = 'none';
-                        }
-                    } catch (error) {
-                        // CORS error - we can't access the iframe content
-                        // Check iframe dimensions as fallback detection
-                        const rect = videoPlayer.getBoundingClientRect();
-                        if (rect.height < 100) {
-                            this.handlePreviewFailure(video, videoPlayer, drivePlayerOverlay, drivePlayerLoading, drivePlayerActions);
-                        } else {
-                            // Iframe has reasonable size, assume it's working
-                            drivePlayerOverlay.style.display = 'none';
-                        }
-                    }
-                }, DRIVE_CONFIG.PREVIEW_TIMEOUT);
-            }
-
-            // Handle preview failure
-            handlePreviewFailure(video, videoPlayer, drivePlayerOverlay, drivePlayerLoading, drivePlayerActions) {
-                const attempts = this.previewAttempts.get(video.id) || 0;
-                this.previewAttempts.set(video.id, attempts + 1);
-
-                drivePlayerLoading.style.display = 'none';
-                drivePlayerActions.style.display = 'flex';
-
-                console.log(`Drive preview attempt ${attempts + 1} failed for video: ${video.id}`);
-            }
-
-            // Setup drive-specific actions
-            setupDriveActions(video, drivePlayerActions) {
-                const openOriginalBtn = document.getElementById('driveOpenOriginal');
-                const downloadBtn = document.getElementById('driveDownload');
-                const retryBtn = document.getElementById('driveTryPreview');
-
-                if (openOriginalBtn) {
-                    openOriginalBtn.onclick = () => {
-                        const viewUrl = video.viewUrl || `https://drive.google.com/file/d/${video.videoId}/view`;
-                        window.open(viewUrl, '_blank');
-                        showNotification('Opening video in Google Drive...', 'success');
-                    };
-                }
-
-                if (downloadBtn) {
-                    downloadBtn.onclick = () => {
-                        const downloadUrl = video.downloadUrl || `https://drive.google.com/uc?export=download&id=${video.videoId}`;
-                        window.open(downloadUrl, '_blank');
-                        showNotification('Starting download...', 'success');
-                    };
-                }
-
-                if (retryBtn) {
-                    retryBtn.onclick = () => {
-                        this.retryPreview(video);
-                    };
-                }
-            }
-
-            // Retry preview with different URL
-            retryPreview(video) {
-                const attempts = this.previewAttempts.get(video.id) || 0;
-                const videoPlayer = document.getElementById('videoPlayer');
-                const drivePlayerOverlay = document.getElementById('drivePlayerOverlay');
-                const drivePlayerLoading = document.getElementById('drivePlayerLoading');
-                const drivePlayerActions = document.getElementById('drivePlayerActions');
-
-                if (attempts < DRIVE_CONFIG.ALTERNATE_URLS.length) {
-                    const alternateUrl = DRIVE_CONFIG.ALTERNATE_URLS[attempts].replace('{id}', video.videoId);
-                    videoPlayer.src = alternateUrl;
-
-                    // Reset overlay
-                    drivePlayerOverlay.style.display = 'flex';
-                    drivePlayerLoading.style.display = 'flex';
-                    drivePlayerActions.style.display = 'none';
-
-                    // Check again after delay
-                    setTimeout(() => {
-                        this.checkDrivePreview(video, videoPlayer, drivePlayerOverlay, drivePlayerLoading, drivePlayerActions);
-                    }, DRIVE_CONFIG.RETRY_DELAY);
-                }
-            }
-
-            // Get drive video info
-            getDriveVideoInfo(videoId) {
-                return {
-                    viewUrl: `https://drive.google.com/file/d/${videoId}/view`,
-                    downloadUrl: `https://drive.google.com/uc?export=download&id=${videoId}`,
-                    embedUrls: DRIVE_CONFIG.ALTERNATE_URLS.map(url => url.replace('{id}', videoId))
-                };
-            }
-        }
-
-        // Initialize services
-        const airtableService = new AirtableService();
-        const youtubeService = new YouTubeDataService();
-        const searchService = new SearchService(airtableService);
-        const driveService = new DriveVideoService();
-
         // Create floating particles for background
         function createFloatingParticles() {
             const particlesContainer = document.getElementById('floatingParticles');
@@ -2967,6 +2434,7 @@
         let searchTimeout = null;
         let recentlyPlayedVideos = JSON.parse(localStorage.getItem('recentlyPlayedVideos') || '[]');
         let searchStartTime = 0;
+        let airtableService = null;
 
         // DOM Elements
         const videoPlayer = document.getElementById('videoPlayer');
@@ -2995,29 +2463,21 @@
         const searchTime = document.getElementById('searchTime');
         const advancedSearchPanel = document.getElementById('advancedSearchPanel');
 
-        // Enhanced DOM Elements for Drive Player
-        const drivePlayerContainer = document.getElementById('drivePlayerContainer');
-        const drivePlayerOverlay = document.getElementById('drivePlayerOverlay');
-        const drivePlayerLoading = document.getElementById('drivePlayerLoading');
-        const drivePlayerActions = document.getElementById('drivePlayerActions');
-
-        // Enhanced Video Controls
-        const videoControls = document.getElementById('videoControls');
-        const playPauseBtn = document.getElementById('playPauseBtn');
-        const muteBtn = document.getElementById('muteBtn');
-        const volumeSlider = document.getElementById('volumeSlider');
-        const progressBar = document.getElementById('progressBar');
-        const progressFill = document.getElementById('progressFill');
-        const timeDisplay = document.getElementById('timeDisplay');
-
-        // Video Meta Elements
-        const videoDuration = document.getElementById('videoDuration');
-        const videoViews = document.getElementById('videoViews');
-        const videoDate = document.getElementById('videoDate');
+        // Initialize services
+        let youtubeService = null;
+        let searchService = null;
 
         // Initialize the application
         async function init() {
             createFloatingParticles();
+            
+            // Initialize Airtable service with API key
+            // NOTE: In production, this should be handled securely through a backend
+            // For demo purposes, we'll use a placeholder that will be replaced
+            airtableService = new AirtableService('patPnJxM2TRWXuka0.087c43bbf8e133080578197ef90fbd4ab5aba7dd7b77194e54fc7a98c5707899');
+            youtubeService = new YouTubeDataService();
+            searchService = new SearchService(airtableService);
+            
             await loadVideosFromAirtable();
             setupEventListeners();
             loadRecentlyPlayed();
@@ -3182,43 +2642,7 @@
                     searchLoading.classList.remove('active');
                     showNotification('Search failed: ' + error.message, 'error');
                 }
-            }, SEARCH_CONFIG.DEBOUNCE_DELAY);
-        }
-
-        // Clear video player
-        function clearVideoPlayer() {
-            // Don't clear if we have a currently playing video
-            if (currentVideos.length > 0 && currentVideoIndex < currentVideos.length) {
-                return;
-            }
-
-            // Only clear if we truly have no videos
-            videoPlayer.src = '';
-            currentVideoTitle.textContent = 'Select a video to play';
-            currentVideoDescription.textContent = 'Choose a video from the playlist or add your own URL to get started with the ultimate video experience.';
-            currentPlatformBadge.textContent = '';
-            currentPlatformBadge.className = 'platform-badge';
-
-            // Reset navigation buttons
-            prevBtn.disabled = true;
-            nextBtn.disabled = true;
-
-            // Hide fallback message and drive overlay
-            fallbackMessage.style.display = 'none';
-            drivePlayerOverlay.style.display = 'none';
-
-            // Clear active video in list
-            document.querySelectorAll('.video-item').forEach(item => {
-                item.classList.remove('active');
-            });
-
-            // Hide video controls
-            videoControls.style.display = 'none';
-
-            // Reset video meta
-            videoDuration.textContent = '--:--';
-            videoViews.textContent = '0 views';
-            videoDate.textContent = '--';
+            }, CONFIG.SEARCH.DEBOUNCE_DELAY);
         }
 
         // Update search results information
@@ -3292,7 +2716,7 @@
 
         // Show search suggestions
         function showSearchSuggestions(query) {
-            if (query.length < SEARCH_CONFIG.MIN_SEARCH_LENGTH) {
+            if (query.length < CONFIG.SEARCH.MIN_SEARCH_LENGTH) {
                 searchSuggestions.classList.remove('active');
                 return;
             }
@@ -3358,7 +2782,7 @@
             performSearch(currentSearchTerm, currentFilters, shouldAutoLoad);
         }
 
-        // Enhanced Load Video Function
+        // Load a specific video
         function loadVideo(index) {
             if (index >= 0 && index < currentVideos.length) {
                 currentVideoIndex = index;
@@ -3367,10 +2791,7 @@
                 // Save to recently played
                 saveToRecentlyPlayed(video);
 
-                // Reset UI states
                 fallbackMessage.style.display = 'none';
-                drivePlayerOverlay.style.display = 'none';
-                videoControls.style.display = 'none';
 
                 let embedUrl = video.url || "";
                 let badgeClass = "";
@@ -3389,11 +2810,11 @@
                         badgeText = "YouTube Playlist";
                         break;
                     case "drive":
-                        // Use enhanced drive handling
-                        embedUrl = video.embedUrl || `https://drive.google.com/file/d/${video.videoId}/preview`;
+                        embedUrl = video.alternateUrl && fallbackMessage.style.display === 'flex' 
+                            ? video.alternateUrl 
+                            : `https://drive.google.com/file/d/${video.videoId}/preview`;
                         badgeClass = "badge-drive";
                         badgeText = "Google Drive";
-                        driveService.loadDriveVideo(video, videoPlayer, drivePlayerOverlay, drivePlayerLoading, drivePlayerActions);
                         break;
                     case "vimeo":
                         embedUrl = `https://player.vimeo.com/video/${video.videoId}?autoplay=1`;
@@ -3416,19 +2837,12 @@
                 // Set up a loading timeout for all video types
                 let loadingTimeout = setTimeout(() => {
                     // If video hasn't loaded after 10 seconds, show fallback
-                    if (video.type !== 'drive') {
-                        showFallbackMessage();
-                    }
+                    showFallbackMessage();
                 }, 10000);
 
                 // Clear the timeout when video loads successfully
                 videoPlayer.onload = () => {
                     clearTimeout(loadingTimeout);
-                    // Show video controls for direct video types
-                    if (video.type === 'direct') {
-                        videoControls.style.display = 'flex';
-                        setupVideoControls();
-                    }
                 };
 
                 videoPlayer.src = embedUrl;
@@ -3438,35 +2852,17 @@
                 currentPlatformBadge.className = `platform-badge ${badgeClass}`;
                 currentPlatformBadge.textContent = badgeText;
 
-                // Update video meta
-                updateVideoMeta(video);
-
-                setupFallbackOptions(video);
+                setupFallbackOptions(video); // Setup fallback for all video types
 
                 updateActiveVideo();
                 updateNavigationButtons();
 
+                if (video.type === "drive") {
+                    setTimeout(checkPreviewAvailability, 3000);
+                }
+
                 console.log(`Playing: ${video.title} (${video.type})`);
             }
-        }
-
-        // Update video metadata
-        function updateVideoMeta(video) {
-            videoDuration.textContent = video.duration || '--:--';
-            videoViews.textContent = `${video.viewCount || 0} views`;
-            
-            if (video.createdAt) {
-                const date = new Date(video.createdAt);
-                videoDate.textContent = date.toLocaleDateString();
-            } else {
-                videoDate.textContent = '--';
-            }
-        }
-
-        // Setup video controls for direct video playback
-        function setupVideoControls() {
-            // This would be implemented for direct video playback
-            // Currently placeholder for future enhancement
         }
 
         // Add custom video from URL
@@ -3499,11 +2895,6 @@
                     url: url,
                     thumbnail: null
                 };
-
-                // Add drive-specific URLs
-                if (parsed.type === 'drive') {
-                    videoData = { ...videoData, ...parsed };
-                }
 
                 // Fetch additional data for YouTube videos
                 if (parsed.type === 'youtube') {
@@ -3559,25 +2950,8 @@
 
             } catch (error) {
                 console.error('Error adding video:', error);
-
-                if (error.message.includes('already exists')) {
-                    showNotification('This video is already in your library. You can find it in the playlist.', 'warning');
-
-                    // Optionally, scroll to and highlight the existing video
-                    const existingVideo = allVideos.find(v =>
-                        v.videoId === parsed.id || v.url === url
-                    );
-                    if (existingVideo) {
-                        const index = currentVideos.findIndex(v => v.id === existingVideo.id);
-                        if (index !== -1) {
-                            loadVideo(index);
-                        }
-                    }
-                } else {
-                    showNotification('Failed to add video: ' + error.message, 'error');
-                }
-            }
-            finally {
+                showNotification('Failed to add video: ' + error.message, 'error');
+            } finally {
                 // Re-enable button
                 addCustomVideoBtn.innerHTML = originalButtonText;
                 addCustomVideoBtn.disabled = false;
@@ -3730,6 +3104,67 @@
             performSearch('', currentFilters, false);
         }
 
+        // Check if preview is available (for Google Drive)
+        function checkPreviewAvailability() {
+            const iframe = videoPlayer;
+            let retryCount = 0;
+            const maxRetries = 3;
+            let useAlternateUrl = false;
+
+            function checkIframe() {
+                try {
+                    // Try to access the iframe content
+                    if (iframe.contentDocument && iframe.contentDocument.body) {
+                        const bodyText = iframe.contentDocument.body.innerText || '';
+                        if (bodyText.includes('preview') && bodyText.includes('not available')) {
+                            handlePreviewFailure();
+                        }
+                    } else {
+                        // If we can't access the iframe content due to CORS, check iframe size
+                        const computedStyle = window.getComputedStyle(iframe);
+                        const height = parseInt(computedStyle.height);
+                        
+                        if (height < 50 || computedStyle.visibility === 'hidden' || computedStyle.display === 'none') {
+                            handlePreviewFailure();
+                        }
+                    }
+                } catch (e) {
+                    console.log("Cannot check iframe content due to CORS policy, using size detection");
+                    // Set up a delayed check
+                    setTimeout(() => handlePreviewFailure(), 5000);
+                }
+            }
+
+            function handlePreviewFailure() {
+                const currentVideo = currentVideos[currentVideoIndex];
+                
+                if (!useAlternateUrl && currentVideo.alternateUrl && retryCount < maxRetries) {
+                    // Try alternate URL format
+                    console.log('Retrying with alternate URL format...');
+                    useAlternateUrl = true;
+                    iframe.src = currentVideo.alternateUrl;
+                    retryCount++;
+                    
+                    // Check again after a delay
+                    setTimeout(checkIframe, 3000);
+                } else if (retryCount < maxRetries) {
+                    // Try refreshing the preview URL
+                    console.log('Retrying preview URL...');
+                    iframe.src = iframe.src + '&t=' + new Date().getTime();
+                    retryCount++;
+                    
+                    // Check again after a delay
+                    setTimeout(checkIframe, 3000);
+                } else {
+                    console.log('All retries failed, showing fallback options');
+                    showFallbackMessage();
+                }
+            }
+
+            // Start checking
+            setTimeout(checkIframe, 3000);
+        }
+
         // Show fallback message
         function showFallbackMessage() {
             fallbackMessage.style.display = 'flex';
@@ -3740,9 +3175,9 @@
             // Open in original site
             document.getElementById('openOriginal').onclick = () => {
                 let url;
-                switch (video.type) {
+                switch(video.type) {
                     case 'drive':
-                        url = video.viewUrl || `https://drive.google.com/file/d/${video.videoId}/view?usp=sharing`;
+                        url = `https://drive.google.com/file/d/${video.videoId}/view?usp=sharing`;
                         break;
                     case 'youtube_playlist':
                         url = `https://www.youtube.com/playlist?list=${video.videoId}`;
@@ -3753,7 +3188,7 @@
                     default:
                         url = video.url;
                 }
-
+                
                 window.open(url, '_blank');
                 showNotification('Opening original video...', 'success');
             };
@@ -3762,11 +3197,16 @@
             document.getElementById('downloadVideo').onclick = () => {
                 let url;
                 if (video.type === 'drive') {
-                    url = video.downloadUrl || `https://drive.google.com/uc?export=download&id=${video.videoId}`;
+                    // Try direct download URL first
+                    url = `https://drive.google.com/uc?export=download&id=${video.videoId}`;
+                    // If alternate URL is available and regular preview failed, use it
+                    if (video.alternateUrl && fallbackMessage.style.display === 'flex') {
+                        url = video.alternateUrl;
+                    }
                 } else {
                     url = video.url;
                 }
-
+                
                 window.open(url, '_blank');
                 showNotification('Starting download...', 'success');
             };
@@ -3822,11 +3262,13 @@
             videoSearch.addEventListener('input', (e) => {
                 const query = e.target.value;
                 showSearchSuggestions(query);
-                performSearch(query, currentFilters);
+                // Only auto-load if it's a new search with results, not when clearing
+                const shouldAutoLoad = query.length >= CONFIG.SEARCH.MIN_SEARCH_LENGTH;
+                performSearch(query, currentFilters, shouldAutoLoad);
             });
 
             videoSearch.addEventListener('focus', () => {
-                if (videoSearch.value.length >= SEARCH_CONFIG.MIN_SEARCH_LENGTH) {
+                if (videoSearch.value.length >= CONFIG.SEARCH.MIN_SEARCH_LENGTH) {
                     showSearchSuggestions(videoSearch.value);
                 }
             });
@@ -3841,8 +3283,10 @@
             clearSearchBtn.addEventListener('click', () => {
                 videoSearch.value = '';
                 currentSearchTerm = '';
-                performSearch('', currentFilters);
+                // Don't auto-load when clearing search
+                performSearch('', currentFilters, false);
                 searchSuggestions.classList.remove('active');
+                showNotification('Search cleared', 'info');
             });
 
             // Sort functionality
@@ -3903,25 +3347,6 @@
                 console.error('Error loading video');
                 showNotification('Error loading video. Please try another.', 'error');
             });
-
-            // Fullscreen functionality
-            document.getElementById('fullscreenBtn').addEventListener('click', () => {
-                const container = document.querySelector('.video-container');
-                if (container.requestFullscreen) {
-                    container.requestFullscreen();
-                } else if (container.webkitRequestFullscreen) {
-                    container.webkitRequestFullscreen();
-                } else if (container.msRequestFullscreen) {
-                    container.msRequestFullscreen();
-                }
-            });
-
-            // Theater mode functionality
-            document.getElementById('theaterModeBtn').addEventListener('click', () => {
-                const playerSection = document.querySelector('.player-section');
-                playerSection.classList.toggle('theater-mode');
-                showNotification('Theater mode toggled', 'info');
-            });
         }
 
         // Initialize when page loads
@@ -3930,6 +3355,24 @@
         // Global functions for HTML onclick handlers
         window.removeFilter = removeFilter;
         window.clearAllFiltersAndSearch = clearAllFiltersAndSearch;
+
+        // API Key Configuration
+        // NOTE: In production, this should be handled securely through a backend
+        // For demo purposes, we'll provide a way to set the API key
+        function setAirtableApiKey(apiKey) {
+            if (apiKey && apiKey.startsWith('pat')) {
+                airtableService = new AirtableService(apiKey);
+                searchService = new SearchService(airtableService);
+                showNotification('Airtable API key configured successfully', 'success');
+                return true;
+            } else {
+                showNotification('Invalid Airtable API key format', 'error');
+                return false;
+            }
+        }
+
+        // Expose the setAirtableApiKey function globally
+        window.setAirtableApiKey = setAirtableApiKey;
     </script>
 </body>
 
