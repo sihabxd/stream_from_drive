@@ -537,6 +537,15 @@
             background: linear-gradient(135deg, #f97316, #c2410c);
         }
 
+        .popularity-badge {
+            background: rgba(34, 197, 94, 0.2);
+            color: var(--success);
+            padding: 4px 8px;
+            border-radius: 8px;
+            font-size: 0.7rem;
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+
         .controls {
             display: flex;
             justify-content: space-between;
@@ -1418,6 +1427,15 @@
             border-radius: 8px;
             font-size: 0.7rem;
             border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .currently-playing-badge {
+            background: rgba(107, 70, 193, 0.3);
+            color: var(--primary-light);
+            padding: 4px 8px;
+            border-radius: 8px;
+            font-size: 0.7rem;
+            border: 1px solid rgba(107, 70, 193, 0.5);
         }
 
         .video-item.highlighted {
@@ -2422,7 +2440,7 @@
         // Video Database - Now loaded from Airtable
         let allVideos = [];
         let currentVideos = [];
-        let currentVideoIndex = 0;
+        let currentVideoIndex = -1; // Start with no video selected
         let currentPlatform = "all";
         let currentSearchTerm = '';
         let currentSortOption = "default";
@@ -2472,8 +2490,6 @@
             createFloatingParticles();
 
             // Initialize Airtable service with API key
-            // NOTE: In production, this should be handled securely through a backend
-            // For demo purposes, we'll use a placeholder that will be replaced
             airtableService = new AirtableService('patPnJxM2TRWXuka0.087c43bbf8e133080578197ef90fbd4ab5aba7dd7b77194e54fc7a98c5707899');
             youtubeService = new YouTubeDataService();
             searchService = new SearchService(airtableService);
@@ -2483,10 +2499,8 @@
             loadRecentlyPlayed();
             showNotification('Professional Video Player Initialized', 'success');
 
-            // Auto-load first video only on initial load
-            if (currentVideos.length > 0) {
-                loadVideo(0);
-            }
+            // FIX: Don't auto-load first video on initial load
+            // User must explicitly click to play a video
         }
 
         // Load recently played videos from localStorage
@@ -2556,8 +2570,8 @@
                 }
 
                 await processVideos();
-                // Auto-load first video on initial load
-                performSearch('', currentFilters, true);
+                // FIX: Don't auto-load first video on initial load
+                performSearch('', currentFilters, false);
 
             } catch (error) {
                 console.error('Error loading videos:', error);
@@ -2624,17 +2638,24 @@
 
                     searchLoading.classList.remove('active');
 
-                    // Only load first video if explicitly requested
-                    if (autoLoadVideo && currentVideos.length > 0) {
-                        loadVideo(0);
-                    } else if (currentVideos.length > 0 && currentVideoIndex >= currentVideos.length) {
-                        // If current video index is out of bounds, reset but don't auto-play
-                        currentVideoIndex = 0;
-                        updateActiveVideo();
-                        updateNavigationButtons();
-                    } else if (currentVideos.length === 0) {
-                        // Don't clear player when no results - keep current video playing
+                    // FIX: Never auto-load videos after search/filter operations
+                    // Only update UI to reflect current state
+                    if (currentVideos.length > 0) {
+                        // Try to maintain current video selection if it exists in filtered results
+                        if (currentVideoIndex >= 0 && currentVideoIndex < currentVideos.length) {
+                            // Current video still exists in filtered list
+                            updateActiveVideo();
+                            updateNavigationButtons();
+                        } else {
+                            // Current video no longer in filtered list, reset selection
+                            currentVideoIndex = -1;
+                            updateActiveVideo();
+                            updateNavigationButtons();
+                        }
+                    } else {
                         showEmptyState();
+                        currentVideoIndex = -1;
+                        updateNavigationButtons();
                     }
 
                 } catch (error) {
@@ -2761,24 +2782,24 @@
             currentVideos = SortingService.sortVideos(currentVideos, sortOption, recentlyPlayedVideos);
             generateVideoList();
 
-            // Don't auto-load when sorting, just update the display
+            // FIX: Don't auto-load when sorting, just update the display
             if (currentVideos.length > 0) {
-                const currentVideo = currentVideos[currentVideoIndex];
-                if (currentVideo) {
+                // Try to maintain current selection
+                if (currentVideoIndex >= 0 && currentVideoIndex < currentVideos.length) {
                     updateActiveVideo();
                 } else {
-                    currentVideoIndex = 0;
+                    currentVideoIndex = -1;
                     updateActiveVideo();
-                    updateNavigationButtons();
                 }
+                updateNavigationButtons();
             }
         }
 
         // Apply platform filter
         function applyPlatformFilter(platform) {
             currentFilters.platform = platform;
-            // REMOVED: Auto-load behavior for filters
-            performSearch(currentSearchTerm, currentFilters, false); // Always false
+            // FIX: Never auto-load when changing platform filters
+            performSearch(currentSearchTerm, currentFilters, false);
         }
 
         // Load a specific video
@@ -2851,7 +2872,7 @@
                 currentPlatformBadge.className = `platform-badge ${badgeClass}`;
                 currentPlatformBadge.textContent = badgeText;
 
-                setupFallbackOptions(video); // Setup fallback for all video types
+                setupFallbackOptions(video);
 
                 updateActiveVideo();
                 updateNavigationButtons();
@@ -2970,8 +2991,11 @@
 
         // Update navigation buttons
         function updateNavigationButtons() {
-            prevBtn.disabled = currentVideoIndex === 0;
-            nextBtn.disabled = currentVideoIndex === currentVideos.length - 1;
+            const hasVideos = currentVideos.length > 0;
+            const hasSelection = currentVideoIndex >= 0 && currentVideoIndex < currentVideos.length;
+            
+            prevBtn.disabled = !hasVideos || !hasSelection || currentVideoIndex === 0;
+            nextBtn.disabled = !hasVideos || !hasSelection || currentVideoIndex === currentVideos.length - 1;
         }
 
         // Update video count display
@@ -3025,6 +3049,7 @@
                             <span>${video.type.charAt(0).toUpperCase() + video.type.slice(1)}</span>
                             ${getRecentlyPlayedBadge(video.id)}
                             ${getPopularityBadge(video)}
+                            ${index === currentVideoIndex ? '<span class="currently-playing-badge"><i class="fas fa-play"></i> Playing</span>' : ''}
                         </div>
                     </div>
                 `;
@@ -3063,7 +3088,7 @@
             const totalEngagement = playCount + viewCount;
 
             if (totalEngagement > 10) {
-                return `<span class="recent-badge" style="background: rgba(34, 197, 94, 0.2); border-color: rgba(34, 197, 94, 0.3); color: var(--success);" title="Popular video"><i class="fas fa-fire"></i></span>`;
+                return `<span class="popularity-badge" title="Popular video"><i class="fas fa-fire"></i></span>`;
             }
             return '';
         }
@@ -3100,7 +3125,7 @@
             sortOptions.value = 'default';
             currentSortOption = 'default';
 
-            performSearch('', currentFilters, false); // Already false - GOOD
+            performSearch('', currentFilters, false);
         }
 
         // Check if preview is available (for Google Drive)
@@ -3245,7 +3270,24 @@
                     document.querySelectorAll('.platform-tab').forEach(t => t.classList.remove('active'));
                     tab.classList.add('active');
                     const platform = tab.dataset.platform;
+                    
+                    // FIX: Store current video before filtering to maintain selection
+                    const currentVideoBeforeFilter = currentVideoIndex >= 0 ? currentVideos[currentVideoIndex] : null;
+                    
                     applyPlatformFilter(platform);
+                    
+                    // Try to maintain the current video after platform change
+                    if (currentVideoBeforeFilter) {
+                        setTimeout(() => {
+                            const newIndex = currentVideos.findIndex(video => video.id === currentVideoBeforeFilter.id);
+                            if (newIndex !== -1) {
+                                currentVideoIndex = newIndex;
+                                updateActiveVideo();
+                                updateNavigationButtons();
+                            }
+                        }, 100);
+                    }
+
                     showNotification(`Showing ${platform} videos`, 'success');
                 });
             });
@@ -3261,8 +3303,8 @@
             videoSearch.addEventListener('input', (e) => {
                 const query = e.target.value;
                 showSearchSuggestions(query);
-                // REMOVED: Auto-load behavior for search
-                performSearch(query, currentFilters, false); // Changed from shouldAutoLoad to false
+                // FIX: Never auto-load when searching
+                performSearch(query, currentFilters, false);
             });
 
             videoSearch.addEventListener('focus', () => {
@@ -3282,7 +3324,7 @@
                 videoSearch.value = '';
                 currentSearchTerm = '';
                 // Don't auto-load when clearing search
-                performSearch('', currentFilters, false); // Already false - GOOD
+                performSearch('', currentFilters, false);
                 searchSuggestions.classList.remove('active');
                 showNotification('Search cleared', 'info');
             });
@@ -3355,8 +3397,6 @@
         window.clearAllFiltersAndSearch = clearAllFiltersAndSearch;
 
         // API Key Configuration
-        // NOTE: In production, this should be handled securely through a backend
-        // For demo purposes, we'll provide a way to set the API key
         function setAirtableApiKey(apiKey) {
             if (apiKey && apiKey.startsWith('pat')) {
                 airtableService = new AirtableService(apiKey);
