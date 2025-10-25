@@ -1512,14 +1512,6 @@
             border: 1px solid rgba(245, 158, 11, 0.3);
         }
 
-        .currently-playing-badge {
-            background: rgba(107, 70, 193, 0.3);
-            color: var(--primary-light);
-            padding: 4px 8px;
-            border-radius: 8px;
-            font-size: 0.7rem;
-            border: 1px solid rgba(107, 70, 193, 0.5);
-        }
 
         .video-item.highlighted {
             background: rgba(107, 70, 193, 0.25);
@@ -3583,7 +3575,6 @@
                                 <span>${video.type.charAt(0).toUpperCase() + video.type.slice(1)}</span>
                                 ${this.getRecentlyPlayedBadge(video.id)}
                                 ${this.getPopularityBadge(video)}
-                                ${video.id === this.currentVideoId ? '<span class="currently-playing-badge"><i class="fas fa-play"></i> Playing</span>' : ''}
                             </div>
                         </div>
                     `;
