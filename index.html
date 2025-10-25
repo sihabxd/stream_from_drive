@@ -9,6 +9,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ae player | Universal Video Platform</title>
     <style>
+        /* ALL CSS REMAINS EXACTLY THE SAME - NO CHANGES */
         :root {
             --primary: #6b46c1;
             --primary-dark: #4c2c92;
@@ -1778,7 +1779,8 @@
         <div class="main-content">
             <div class="player-section slide-in-left">
                 <div class="video-container">
-                    <iframe id="videoPlayer" src="" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe>
+                    <iframe id="videoPlayer" src="" allow="autoplay; encrypted-media; fullscreen"
+                        allowfullscreen></iframe>
                     <div class="fallback-message" id="fallbackMessage">
                         <h3><i class="fas fa-exclamation-triangle"></i> Preview Not Available</h3>
                         <p>This video cannot be previewed directly. Try one of these options:</p>
@@ -1970,7 +1972,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <script>
-        // Professional Configuration
+        // ==================== PROFESSIONAL CONFIGURATION ====================
         const CONFIG = {
             AIRTABLE: {
                 BASE_ID: 'appFZTp4rpbWSdLVO',
@@ -1984,754 +1986,159 @@
                 SEARCH_FIELDS: ['title', 'description', 'type', 'tags', 'category'],
                 CACHE_DURATION: 5 * 60 * 1000,
                 FUZZY_SEARCH: true
+            },
+            STORAGE: {
+                ALL_VIDEOS_KEY: 'videoPlayer_allVideos',
+                CURRENT_VIDEO_KEY: 'videoPlayer_currentVideo',
+                FILTER_STATE_KEY: 'videoPlayer_filterState',
+                RECENTLY_PLAYED_KEY: 'videoPlayer_recentlyPlayed'
             }
         };
 
-        // Professional Video Metadata Service
-        class VideoMetadataService {
-            constructor() {
-                this.cache = new Map();
-                this.cacheTimeout = 24 * 60 * 60 * 1000; // 24 hours
-            }
+        // ==================== ENHANCED UNIVERSAL VIDEO URL PARSER ====================
+        class UniversalVideoParser {
+            static async parseURL(url) {
+                if (!url) return null;
 
-            // Detect platform from URL
-            detectPlatform(url) {
-                if (!url) return 'other';
-                
-                const urlLower = url.toLowerCase();
-                
-                if (urlLower.includes('youtube.com') || urlLower.includes('youtu.be')) {
-                    return 'youtube';
-                } else if (urlLower.includes('vimeo.com')) {
-                    return 'vimeo';
-                } else if (urlLower.includes('dailymotion.com') || urlLower.includes('dai.ly')) {
-                    return 'dailymotion';
-                } else if (urlLower.includes('facebook.com') || urlLower.includes('fb.watch')) {
-                    return 'facebook';
-                } else if (urlLower.includes('instagram.com')) {
-                    return 'instagram';
-                } else if (urlLower.includes('tiktok.com')) {
-                    return 'tiktok';
-                } else if (urlLower.includes('twitter.com') || urlLower.includes('x.com')) {
-                    return 'twitter';
-                } else if (urlLower.includes('twitch.tv')) {
-                    return 'twitch';
-                } else if (urlLower.includes('streamable.com')) {
-                    return 'streamable';
-                } else if (urlLower.match(/\.(mp4|webm|mov|mkv|flv|avi|ogg)$/i)) {
-                    return 'direct';
-                } else {
-                    return 'other';
+                url = url.trim();
+                if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                    url = 'https://' + url;
                 }
-            }
 
-            // Extract YouTube video ID
-            extractYouTubeVideoId(url) {
-                const patterns = [
-                    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/v\/|youtube\.com\/shorts\/)([^&?\/#]+)/,
-                    /youtube\.com\/playlist\?list=([^&?\/#]+)/
+                let parsedUrl;
+                try {
+                    parsedUrl = new URL(url);
+                } catch (e) {
+                    return null; // Invalid URL
+                }
+
+                const shortenerDomains = [
+                    'bit.ly', 't.co', 'tinyurl.com', 'goo.gl', 'is.gd', 'ow.ly', 'buff.ly',
+                    'adf.ly', 'bc.vc', 'cutt.ly', 'db.tt', 'q.gs', 'po.st', 'pub.vitrue.com',
+                    'link.zip.net', 'tiny.cc', 'wp.me', 'tr.im', 'twurl.nl', 'cli.gs',
+                    ' Chilp.it', 'clop.in', 'ff.im', 'idek.net', 'kl.am', 'migre.me',
+                    'hex.io', 'hurl.me', 'krunchd.com', 'liip.to', 'lnkd.in', 'memurl.com'
                 ];
 
-                for (const pattern of patterns) {
-                    const match = url.match(pattern);
-                    if (match) return match[1];
+                const host = parsedUrl.host.toLowerCase().replace('www.', '');
+
+                let resolvedUrl = url;
+                if (shortenerDomains.includes(host)) {
+                    resolvedUrl = await this.resolveShortUrl(url);
                 }
-                return null;
-            }
 
-            // Get cached metadata
-            getCachedMetadata(url) {
-                const cacheKey = `video_metadata_${url}`;
-                const cached = localStorage.getItem(cacheKey);
-                if (!cached) return null;
+                // Try each platform parser in order
+                const parsers = [
+                    this.parseYouTube,
+                    this.parseGoogleDrive,
+                    this.parseVimeo,
+                    this.parseDailymotion,
+                    this.parseFacebook,
+                    this.parseInstagram,
+                    this.parseTikTok,
+                    this.parseTwitter,
+                    this.parseTwitch,
+                    this.parseStreamable,
+                    this.parseDropbox,
+                    this.parseGooglePhotos,
+                    this.parseDirectVideo
+                ];
 
-                try {
-                    const { metadata, timestamp } = JSON.parse(cached);
-                    if (Date.now() - timestamp < this.cacheTimeout) {
-                        return metadata;
-                    } else {
-                        localStorage.removeItem(cacheKey);
+                for (const parser of parsers) {
+                    const result = parser(resolvedUrl);
+                    if (result) {
+                        return {
+                            ...result,
+                            originalUrl: url
+                        };
                     }
-                } catch (error) {
-                    console.error('Error reading cache:', error);
                 }
-                return null;
+
+                // Fallback for unknown URLs
+                return this.parseUnknown(url);
             }
 
-            // Set cached metadata
-            setCachedMetadata(url, metadata) {
-                const cacheKey = `video_metadata_${url}`;
-                try {
-                    localStorage.setItem(cacheKey, JSON.stringify({
-                        metadata,
-                        timestamp: Date.now()
-                    }));
-                } catch (error) {
-                    console.error('Error setting cache:', error);
-                }
-            }
-
-            // Fetch metadata from oEmbed endpoints
-            async fetchMetadata(url) {
-                // Check cache first
-                const cached = this.getCachedMetadata(url);
-                if (cached) {
-                    return cached;
-                }
-
-                const platform = this.detectPlatform(url);
-                let metadata = {
-                    title: '',
-                    author_name: '',
-                    thumbnail_url: '',
-                    duration: 0
-                };
+            static async resolveShortUrl(url, hops = 0) {
+                if (hops > 5) return url;
 
                 try {
-                    switch (platform) {
-                        case 'youtube':
-                            metadata = await this.fetchYouTubeMetadata(url);
-                            break;
-                        case 'vimeo':
-                            metadata = await this.fetchVimeoMetadata(url);
-                            break;
-                        case 'dailymotion':
-                            metadata = await this.fetchDailymotionMetadata(url);
-                            break;
-                        case 'facebook':
-                            metadata = await this.fetchFacebookMetadata(url);
-                            break;
-                        case 'instagram':
-                            metadata = await this.fetchInstagramMetadata(url);
-                            break;
-                        case 'tiktok':
-                            metadata = await this.fetchTikTokMetadata(url);
-                            break;
-                        case 'twitter':
-                            metadata = await this.fetchTwitterMetadata(url);
-                            break;
-                        case 'twitch':
-                            metadata = await this.fetchTwitchMetadata(url);
-                            break;
-                        case 'streamable':
-                            metadata = await this.fetchStreamableMetadata(url);
-                            break;
-                        case 'direct':
-                            metadata = this.getDirectVideoMetadata(url);
-                            break;
-                        default:
-                            metadata = this.getDefaultMetadata(url);
-                    }
-                } catch (error) {
-                    console.error(`Error fetching metadata for ${url}:`, error);
-                    // Fallback for failed requests
-                    metadata = await this.getFallbackMetadata(url, platform);
-                }
+                    const response = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`);
+                    if (!response.ok) return url;
 
-                // Cache the result
-                this.setCachedMetadata(url, metadata);
-                return metadata;
-            }
-
-            // YouTube metadata
-            async fetchYouTubeMetadata(url) {
-                try {
-                    const response = await fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`);
-                    if (!response.ok) throw new Error('YouTube oEmbed failed');
-                    
                     const data = await response.json();
-                    return {
-                        title: data.title,
-                        author_name: data.author_name,
-                        thumbnail_url: data.thumbnail_url,
-                        duration: 0 // YouTube oEmbed doesn't provide duration
-                    };
+
+                    // Check if direct video
+                    const contentType = data.headers['content-type'] || data.headers['Content-Type'] || '';
+                    if (contentType.includes('video/')) {
+                        return url; // Use original URL for direct video, browser will handle redirect
+                    }
+
+                    const contents = data.contents;
+                    if (typeof contents !== 'string' || !contents.toLowerCase().includes('<html')) {
+                        return url; // Not HTML, possibly direct file or error
+                    }
+
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(contents, 'text/html');
+
+                    let finalUrl = doc.querySelector('link[rel="canonical"]')?.getAttribute('href');
+                    if (!finalUrl) {
+                        finalUrl = doc.querySelector('meta[property="og:url"]')?.getAttribute('content');
+                    }
+
+                    if (finalUrl && finalUrl !== url) {
+                        return await this.resolveShortUrl(finalUrl, hops + 1);
+                    }
+
+                    return url;
                 } catch (error) {
-                    // Fallback: extract video ID and build basic metadata
-                    const videoId = this.extractYouTubeVideoId(url);
-                    if (videoId) {
-                        return {
-                            title: `YouTube Video (${videoId})`,
-                            author_name: 'YouTube Creator',
-                            thumbnail_url: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
-                            duration: 0
-                        };
-                    }
-                    throw error;
+                    console.error('URL resolution error:', error);
+                    return url;
                 }
             }
 
-            // Vimeo metadata
-            async fetchVimeoMetadata(url) {
-                const response = await fetch(`https://vimeo.com/api/oembed.json?url=${encodeURIComponent(url)}`);
-                if (!response.ok) throw new Error('Vimeo oEmbed failed');
-                
-                const data = await response.json();
-                return {
-                    title: data.title,
-                    author_name: data.author_name,
-                    thumbnail_url: data.thumbnail_url,
-                    duration: data.duration || 0
-                };
-            }
-
-            // Dailymotion metadata
-            async fetchDailymotionMetadata(url) {
-                const response = await fetch(`https://www.dailymotion.com/services/oembed?url=${encodeURIComponent(url)}`);
-                if (!response.ok) throw new Error('Dailymotion oEmbed failed');
-                
-                const data = await response.json();
-                return {
-                    title: data.title,
-                    author_name: data.author_name,
-                    thumbnail_url: data.thumbnail_url,
-                    duration: 0
-                };
-            }
-
-            // Facebook metadata
-            async fetchFacebookMetadata(url) {
-                const response = await fetch(`https://www.facebook.com/plugins/video/oembed.json/?url=${encodeURIComponent(url)}`);
-                if (!response.ok) throw new Error('Facebook oEmbed failed');
-                
-                const data = await response.json();
-                return {
-                    title: data.title || 'Facebook Video',
-                    author_name: data.author_name || 'Facebook User',
-                    thumbnail_url: data.thumbnail_url,
-                    duration: 0
-                };
-            }
-
-            // Instagram metadata
-            async fetchInstagramMetadata(url) {
-                const response = await fetch(`https://graph.facebook.com/v17.0/instagram_oembed?url=${encodeURIComponent(url)}&omitscript=true`);
-                if (!response.ok) throw new Error('Instagram oEmbed failed');
-                
-                const data = await response.json();
-                return {
-                    title: data.title || 'Instagram Video',
-                    author_name: data.author_name || 'Instagram User',
-                    thumbnail_url: data.thumbnail_url,
-                    duration: 0
-                };
-            }
-
-            // TikTok metadata
-            async fetchTikTokMetadata(url) {
-                const response = await fetch(`https://www.tiktok.com/oembed?url=${encodeURIComponent(url)}`);
-                if (!response.ok) throw new Error('TikTok oEmbed failed');
-                
-                const data = await response.json();
-                return {
-                    title: data.title || 'TikTok Video',
-                    author_name: data.author_name || 'TikTok User',
-                    thumbnail_url: data.thumbnail_url,
-                    duration: 0
-                };
-            }
-
-            // Twitter metadata
-            async fetchTwitterMetadata(url) {
-                const response = await fetch(`https://publish.twitter.com/oembed?url=${encodeURIComponent(url)}`);
-                if (!response.ok) throw new Error('Twitter oEmbed failed');
-                
-                const data = await response.json();
-                // Extract thumbnail from HTML if available
-                let thumbnail_url = '';
-                if (data.html) {
-                    const thumbMatch = data.html.match(/<img[^>]+src="([^">]+)"/);
-                    if (thumbMatch) thumbnail_url = thumbMatch[1];
-                }
-                
-                return {
-                    title: data.author_name ? `Tweet by ${data.author_name}` : 'Twitter Video',
-                    author_name: data.author_name || 'Twitter User',
-                    thumbnail_url: thumbnail_url,
-                    duration: 0
-                };
-            }
-
-            // Twitch metadata
-            async fetchTwitchMetadata(url) {
-                const response = await fetch(`https://noembed.com/embed?url=${encodeURIComponent(url)}`);
-                if (!response.ok) throw new Error('Twitch oEmbed failed');
-                
-                const data = await response.json();
-                return {
-                    title: data.title,
-                    author_name: data.author_name,
-                    thumbnail_url: data.thumbnail_url,
-                    duration: 0
-                };
-            }
-
-            // Streamable metadata
-            async fetchStreamableMetadata(url) {
-                const response = await fetch(`https://api.streamable.com/oembed.json?url=${encodeURIComponent(url)}`);
-                if (!response.ok) throw new Error('Streamable oEmbed failed');
-                
-                const data = await response.json();
-                return {
-                    title: data.title,
-                    author_name: data.author_name || 'Streamable User',
-                    thumbnail_url: data.thumbnail_url,
-                    duration: 0
-                };
-            }
-
-            // Direct video file metadata
-            getDirectVideoMetadata(url) {
-                const filename = url.split('/').pop()?.split('?')[0] || 'Video File';
-                return {
-                    title: filename,
-                    author_name: '',
-                    thumbnail_url: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjcwIiB2aWV3Qm94PSIwIDAgMTAwIDcwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iNzAiIGZpbGw9IiMzMzMiLz48cGF0aCBkPSJNMzUgMzBMNTAgNDVINjVMMzUiIHN0cm9rZT0iIzk5OSIgc3Ryb2tlLXdpZHRoPSIyIi8+PC9zdmc+',
-                    duration: 0
-                };
-            }
-
-            // Default metadata for unknown platforms
-            getDefaultMetadata(url) {
-                return {
-                    title: 'Video',
-                    author_name: '',
-                    thumbnail_url: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjcwIiB2aWV3Qm94PSIwIDAgMTAwIDcwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iNzAiIGZpbGw9IiMzMzMiLz48cGF0aCBkPSJNMzUgMzBMNTAgNDVINjVMMzUiIHN0cm9rZT0iIzk5OSIgc3Ryb2tlLXdpZHRoPSIyIi8+PC9zdmc+',
-                    duration: 0
-                };
-            }
-
-            // Fallback metadata when primary fetch fails
-            async getFallbackMetadata(url, platform) {
-                if (platform === 'youtube') {
-                    const videoId = this.extractYouTubeVideoId(url);
-                    if (videoId) {
-                        return {
-                            title: `YouTube Video (${videoId})`,
-                            author_name: 'YouTube Creator',
-                            thumbnail_url: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
-                            duration: 0
-                        };
-                    }
-                }
-                return this.getDefaultMetadata(url);
-            }
-
-            // Format duration from seconds to HH:MM:SS
-            formatDuration(seconds) {
-                if (!seconds || seconds === 0) return '--:--';
-                
-                const hours = Math.floor(seconds / 3600);
-                const minutes = Math.floor((seconds % 3600) / 60);
-                const secs = seconds % 60;
-
-                if (hours > 0) {
-                    return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-                } else {
-                    return `${minutes}:${secs.toString().padStart(2, '0')}`;
-                }
-            }
-        }
-
-        // Enhanced Airtable Service Class with Metadata Enrichment
-        class AirtableService {
-            constructor(apiKey) {
-                this.apiKey = apiKey;
-                this.baseUrl = `${CONFIG.AIRTABLE.API_URL}/${CONFIG.AIRTABLE.BASE_ID}/${CONFIG.AIRTABLE.TABLE_NAME}`;
-                this.headers = {
-                    'Authorization': `Bearer ${this.apiKey}`,
-                    'Content-Type': 'application/json'
-                };
-                this.retryCount = 3;
-                this.retryDelay = 1000;
-                this.cache = new Map();
-                this.metadataService = new VideoMetadataService();
-            }
-
-            // Enhanced error handling with retry mechanism
-            async handleRequest(url, options, retries = this.retryCount) {
-                try {
-                    const response = await fetch(url, options);
-
-                    if (!response.ok) {
-                        if (response.status === 429 && retries > 0) {
-                            // Rate limiting - wait and retry
-                            await this.delay(this.retryDelay);
-                            return this.handleRequest(url, options, retries - 1);
-                        }
-                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                    }
-
-                    return await response.json();
-                } catch (error) {
-                    if (retries > 0) {
-                        await this.delay(this.retryDelay);
-                        return this.handleRequest(url, options, retries - 1);
-                    }
-                    throw error;
-                }
-            }
-
-            delay(ms) {
-                return new Promise(resolve => setTimeout(resolve, ms));
-            }
-
-            // ENHANCED: Get all videos from Airtable with automatic metadata enrichment
-            async getAllVideos() {
-                try {
-                    console.log('Fetching videos from Airtable...');
-                    const data = await this.handleRequest(this.baseUrl, {
-                        method: 'GET',
-                        headers: this.headers
-                    });
-
-                    if (!data.records || !Array.isArray(data.records)) {
-                        throw new Error('Invalid Airtable response format');
-                    }
-
-                    // Convert Airtable records to video objects
-                    const videos = data.records.map(record => ({
-                        id: record.id,
-                        videoId: record.fields.videoId || record.id,
-                        title: record.fields.title || '',
-                        description: record.fields.description || '',
-                        type: record.fields.type || 'other',
-                        duration: record.fields.duration || '--:--',
-                        url: record.fields.url || '',
-                        thumbnail: record.fields.thumbnail || null,
-                        createdAt: record.fields.createdAt || new Date().toISOString(),
-                        status: record.fields.status || 'active',
-                        viewCount: record.fields.viewCount || 0,
-                        tags: record.fields.tags || [],
-                        category: record.fields.category || 'general',
-                        author: record.fields.author || ''
-                    })).filter(video => video.status !== 'inactive');
-
-                    // ENHANCEMENT: Enrich videos with metadata from their URLs
-                    console.log('Enriching videos with metadata...');
-                    const enrichedVideos = await this.enrichVideosWithMetadata(videos);
-
-                    return enrichedVideos;
-                } catch (error) {
-                    console.error('Error fetching videos from Airtable:', error);
-                    throw new Error('Failed to load videos from cloud storage');
-                }
-            }
-
-            // NEW: Enrich videos with metadata from their URLs
-            async enrichVideosWithMetadata(videos) {
-                const enrichmentPromises = videos.map(async (video) => {
-                    // Skip if no URL or if we already have complete data
-                    if (!video.url || (video.title && video.thumbnail && video.author)) {
-                        return video;
-                    }
-
-                    try {
-                        const metadata = await this.metadataService.fetchMetadata(video.url);
-                        
-                        // Only update empty fields (don't overwrite existing data)
-                        if (!video.title && metadata.title) {
-                            video.title = metadata.title;
-                        }
-                        if (!video.author && metadata.author_name) {
-                            video.author = metadata.author_name;
-                        }
-                        if (!video.thumbnail && metadata.thumbnail_url) {
-                            video.thumbnail = metadata.thumbnail_url;
-                        }
-                        if ((!video.duration || video.duration === '--:--') && metadata.duration > 0) {
-                            video.duration = this.metadataService.formatDuration(metadata.duration);
-                        }
-                        
-                        // Update video type based on detected platform if not set
-                        if (!video.type || video.type === 'other') {
-                            video.type = this.metadataService.detectPlatform(video.url);
-                        }
-
-                        console.log(`Enriched video: ${video.title || video.url}`);
-                    } catch (error) {
-                        console.warn(`Failed to enrich video ${video.url}:`, error);
-                        // Continue with original video data if metadata fetch fails
-                    }
-
-                    return video;
-                });
-
-                // Wait for all metadata fetches to complete (success or failure)
-                return await Promise.allSettled(enrichmentPromises)
-                    .then(results => results.map(result => 
-                        result.status === 'fulfilled' ? result.value : null
-                    ).filter(video => video !== null));
-            }
-
-            // Enhanced search with filtering capabilities
-            async searchVideos(query, filters = {}) {
-                const cacheKey = `search-${JSON.stringify({ query, filters })}`;
-                const cached = this.cache.get(cacheKey);
-
-                if (cached && Date.now() - cached.timestamp < CONFIG.SEARCH.CACHE_DURATION) {
-                    return cached.data;
-                }
-
-                try {
-                    let allVideos = await this.getAllVideos();
-
-                    // Apply search query
-                    if (query && query.length >= CONFIG.SEARCH.MIN_SEARCH_LENGTH) {
-                        const searchTerms = query.toLowerCase().split(' ').filter(term => term.length > 0);
-
-                        allVideos = allVideos.filter(video => {
-                            return searchTerms.some(term => {
-                                return CONFIG.SEARCH.SEARCH_FIELDS.some(field => {
-                                    const fieldValue = String(video[field] || '').toLowerCase();
-                                    return fieldValue.includes(term);
-                                });
-                            });
-                        });
-                    }
-
-                    // Apply filters
-                    if (filters.platform && filters.platform !== 'all') {
-                        allVideos = allVideos.filter(video => video.type === filters.platform);
-                    }
-
-                    // Cache the result
-                    this.cache.set(cacheKey, {
-                        data: allVideos,
-                        timestamp: Date.now()
-                    });
-
-                    return allVideos;
-                } catch (error) {
-                    console.error('Error searching videos:', error);
-                    throw error;
-                }
-            }
-
-            parseDurationToSeconds(duration) {
-                if (!duration || duration === '--:--') return 0;
-
-                const parts = duration.split(':');
-                if (parts.length === 3) {
-                    return parseInt(parts[0]) * 3600 + parseInt(parts[1]) * 60 + parseInt(parts[2]);
-                } else if (parts.length === 2) {
-                    return parseInt(parts[0]) * 60 + parseInt(parts[1]);
-                }
-                return 0;
-            }
-
-            // Enhanced addVideo method with duplicate prevention
-            async addVideo(video) {
-                try {
-                    // Check for duplicates
-                    const existingVideo = await this.checkDuplicateVideo(video);
-                    if (existingVideo) {
-                        throw new Error('This video already exists in your library');
-                    }
-
-                    const record = {
-                        fields: {
-                            videoId: video.id,
-                            title: video.title,
-                            description: video.description,
-                            type: video.type,
-                            duration: video.duration || '--:--',
-                            url: video.url,
-                            thumbnail: video.thumbnail || '',
-                            createdAt: new Date().toISOString(),
-                            status: 'active',
-                            viewCount: video.viewCount || 0,
-                            tags: video.tags || [],
-                            category: video.category || 'general',
-                            author: video.author || ''
-                        }
-                    };
-
-                    const data = await this.handleRequest(this.baseUrl, {
-                        method: 'POST',
-                        headers: this.headers,
-                        body: JSON.stringify({ records: [record] })
-                    });
-
-                    if (!data.records || data.records.length === 0) {
-                        throw new Error('No record returned from Airtable');
-                    }
-
-                    // Clear search cache
-                    this.clearCache();
-
-                    const createdRecord = data.records[0];
-                    return {
-                        id: createdRecord.id,
-                        videoId: createdRecord.fields.videoId,
-                        title: createdRecord.fields.title,
-                        description: createdRecord.fields.description,
-                        type: createdRecord.fields.type,
-                        duration: createdRecord.fields.duration,
-                        url: createdRecord.fields.url,
-                        thumbnail: createdRecord.fields.thumbnail,
-                        createdAt: createdRecord.fields.createdAt,
-                        status: createdRecord.fields.status,
-                        viewCount: createdRecord.fields.viewCount || 0,
-                        tags: createdRecord.fields.tags || [],
-                        category: createdRecord.fields.category || 'general',
-                        author: createdRecord.fields.author || ''
-                    };
-                } catch (error) {
-                    console.error('Error adding video to Airtable:', error);
-                    throw error;
-                }
-            }
-
-            // Clear cache
-            clearCache() {
-                this.cache.clear();
-            }
-
-            // Check for duplicate videos
-            async checkDuplicateVideo(video) {
-                try {
-                    const filterFormula = `OR({videoId} = "${video.id}", {url} = "${video.url}")`;
-                    const url = `${this.baseUrl}?filterByFormula=${encodeURIComponent(filterFormula)}`;
-
-                    const data = await this.handleRequest(url, {
-                        method: 'GET',
-                        headers: this.headers
-                    });
-
-                    return data.records && data.records.length > 0 ? data.records[0] : null;
-                } catch (error) {
-                    console.error('Error checking duplicate video:', error);
-                    return null;
-                }
-            }
-        }
-
-        // [Rest of the code remains the same - SearchService, VideoURLParser, YouTubeDataService, SortingService classes and main application logic]
-
-        // Professional Search Service
-        class SearchService {
-            constructor(airtableService) {
-                this.airtableService = airtableService;
-                this.searchIndex = new Map();
-                this.suggestionCache = new Map();
-            }
-
-            // Build search index for faster searches
-            async buildSearchIndex(videos) {
-                this.searchIndex.clear();
-
-                videos.forEach(video => {
-                    // Index by title words
-                    const titleWords = this.tokenize(video.title);
-                    titleWords.forEach(word => {
-                        if (!this.searchIndex.has(word)) {
-                            this.searchIndex.set(word, new Set());
-                        }
-                        this.searchIndex.get(word).add(video.id);
-                    });
-
-                    // Index by platform
-                    if (!this.searchIndex.has(video.type)) {
-                        this.searchIndex.set(video.type, new Set());
-                    }
-                    this.searchIndex.get(video.type).add(video.id);
-                });
-            }
-
-            // Tokenize text for search
-            tokenize(text) {
-                return text.toLowerCase()
-                    .replace(/[^\w\s]/g, '')
-                    .split(/\s+/)
-                    .filter(word => word.length > 2);
-            }
-
-            // Get search suggestions
-            getSuggestions(query, videos, maxResults = CONFIG.SEARCH.MAX_SUGGESTIONS) {
-                if (query.length < CONFIG.SEARCH.MIN_SEARCH_LENGTH) {
-                    return [];
-                }
-
-                const cacheKey = `suggestions-${query}`;
-                if (this.suggestionCache.has(cacheKey)) {
-                    return this.suggestionCache.get(cacheKey);
-                }
-
-                const suggestions = [];
-                const queryLower = query.toLowerCase();
-
-                // Add matching titles
-                videos.forEach(video => {
-                    if (video.title.toLowerCase().includes(queryLower)) {
-                        suggestions.push({
-                            type: 'title',
-                            text: video.title,
-                            video: video
-                        });
-                    }
-                });
-
-                // Add matching platforms
-                const platforms = ['youtube', 'drive', 'vimeo', 'dailymotion', 'facebook', 'instagram', 'tiktok', 'twitter', 'twitch', 'streamable', 'dropbox', 'photos'];
-                platforms.forEach(platform => {
-                    if (platform.includes(queryLower)) {
-                        suggestions.push({
-                            type: 'platform',
-                            text: `${platform.charAt(0).toUpperCase() + platform.slice(1)} Videos`,
-                            platform: platform
-                        });
-                    }
-                });
-
-                // Limit results and cache
-                const limitedSuggestions = suggestions.slice(0, maxResults);
-                this.suggestionCache.set(cacheKey, limitedSuggestions);
-
-                return limitedSuggestions;
-            }
-
-            // Clear suggestion cache
-            clearSuggestionCache() {
-                this.suggestionCache.clear();
-            }
-        }
-
-        // Enhanced Video URL Parser - Supports All Major Platforms
-        class VideoURLParser {
             static parseYouTube(url) {
                 const patterns = [
-                    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/v\/|youtube\.com\/shorts\/|youtube\.com\/live\/|music\.youtube\.com\/watch\?v=)([^&?\/#]+)/,
-                    /youtube\.com\/playlist\?list=([^&?\/#]+)/
+                    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/v\/|youtube\.com\/shorts\/)([^&?\/#]+)/,
+                    /youtube\.com\/playlist\?list=([^&?\/#]+)/,
+                    /music\.youtube\.com\/watch\?v=([^&?\/#]+)/
                 ];
 
                 for (const pattern of patterns) {
                     const match = url.match(pattern);
                     if (match) {
                         const videoId = match[1];
+
+                        // Handle playlists
                         if (url.includes('playlist')) {
                             return {
-                                id: `playlist-${videoId}`,
+                                videoId: `playlist-${videoId}`,
                                 type: 'youtube_playlist',
-                                embedUrl: `https://www.youtube.com/embed/videoseries?list=${videoId}&autoplay=1&modestbranding=1&rel=0&playsinline=1`,
+                                embedUrls: [
+                                    `https://www.youtube.com/embed/videoseries?list=${videoId}&autoplay=1&modestbranding=1&rel=0&playsinline=1&origin=${encodeURIComponent(window.location.origin)}`,
+                                    `https://www.youtube-nocookie.com/embed/videoseries?list=${videoId}&autoplay=1&modestbranding=1&rel=0&playsinline=1`,
+                                    `https://www.youtube.com/embed/videoseries?list=${videoId}&autoplay=1&origin=*`
+                                ],
                                 thumbnail: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjcwIiB2aWV3Qm94PSIwIDAgMTAwIDcwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iNzAiIGZpbGw9IiNmMTBhMGIiLz48dGV4dCB4PSI1MCIgeT0iMzUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxMCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPllvdVR1YmUgUGxheWxpc3Q8L3RleHQ+PC9zdmc+',
-                                title: 'YouTube Playlist'
+                                title: 'YouTube Playlist',
+                                description: 'YouTube Playlist'
                             };
                         } else {
-                            // Try multiple embed options to avoid "Video unavailable"
+                            // Regular YouTube videos with multiple fallback options
                             const embedUrls = [
                                 `https://www.youtube.com/embed/${videoId}?autoplay=1&modestbranding=1&rel=0&playsinline=1&origin=${encodeURIComponent(window.location.origin)}`,
                                 `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&modestbranding=1&rel=0&playsinline=1`,
-                                `https://www.youtube.com/embed/${videoId}?autoplay=1&origin=*`
+                                `https://www.youtube.com/embed/${videoId}?autoplay=1&origin=*`,
+                                `https://yewtu.be/embed/${videoId}?autoplay=1`,
+                                `https://invidious.snopyta.org/embed/${videoId}?autoplay=1`
                             ];
-                            
                             return {
-                                id: videoId,
+                                videoId: videoId,
                                 type: 'youtube',
-                                embedUrl: embedUrls[0], // Use first option, will fallback if needed
-                                fallbackUrls: embedUrls.slice(1),
+                                embedUrls: embedUrls,
                                 thumbnail: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
-                                title: 'YouTube Video'
+                                title: 'YouTube Video',
+                                description: 'YouTube Video'
                             };
                         }
                     }
@@ -2752,11 +2159,15 @@
                     if (match) {
                         const fileId = match[1];
                         return {
-                            id: fileId,
+                            videoId: fileId,
                             type: 'drive',
-                            embedUrl: `https://drive.google.com/file/d/${fileId}/preview`,
+                            embedUrls: [
+                                `https://drive.google.com/file/d/${fileId}/preview`,
+                                `https://drive.google.com/file/d/${fileId}/view`
+                            ],
                             thumbnail: `https://drive.google.com/thumbnail?id=${fileId}&sz=w400`,
-                            title: 'Google Drive Video'
+                            title: 'Google Drive Video',
+                            description: 'Google Drive Video'
                         };
                     }
                 }
@@ -2774,11 +2185,15 @@
                     if (match) {
                         const videoId = match[1];
                         return {
-                            id: videoId,
+                            videoId: videoId,
                             type: 'vimeo',
-                            embedUrl: `https://player.vimeo.com/video/${videoId}?autoplay=1&title=0&byline=0&portrait=0`,
+                            embedUrls: [
+                                `https://player.vimeo.com/video/${videoId}?autoplay=1&title=0&byline=0&portrait=0&dnt=1`,
+                                `https://vimeo.com/${videoId}`
+                            ],
                             thumbnail: `https://vumbnail.com/${videoId}.jpg`,
-                            title: 'Vimeo Video'
+                            title: 'Vimeo Video',
+                            description: 'Vimeo Video'
                         };
                     }
                 }
@@ -2788,7 +2203,8 @@
             static parseDailymotion(url) {
                 const patterns = [
                     /dailymotion\.com\/video\/([^_]+)/,
-                    /dai\.ly\/([^_]+)/
+                    /dailymotion\.com\/embed\/video\/([^?]+)/,
+                    /dai\.ly\/([^?]+)/
                 ];
 
                 for (const pattern of patterns) {
@@ -2796,11 +2212,15 @@
                     if (match) {
                         const videoId = match[1];
                         return {
-                            id: videoId,
+                            videoId: videoId,
                             type: 'dailymotion',
-                            embedUrl: `https://www.dailymotion.com/embed/video/${videoId}?autoplay=1`,
+                            embedUrls: [
+                                `https://www.dailymotion.com/embed/video/${videoId}?autoplay=1`,
+                                `https://dailymotion.com/embed/video/${videoId}`
+                            ],
                             thumbnail: `https://www.dailymotion.com/thumbnail/video/${videoId}`,
-                            title: 'Dailymotion Video'
+                            title: 'Dailymotion Video',
+                            description: 'Dailymotion Video'
                         };
                     }
                 }
@@ -2808,30 +2228,27 @@
             }
 
             static parseFacebook(url) {
-                const patterns = [
-                    /facebook\.com\/([^\/]+)\/videos\/(\d+)/,
-                    /fb\.watch\/([^\/]+)/
-                ];
-
-                for (const pattern of patterns) {
-                    const match = url.match(pattern);
-                    if (match) {
-                        const videoId = match[2] || match[1];
-                        return {
-                            id: videoId,
-                            type: 'facebook',
-                            embedUrl: `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(url)}&show_text=0&autoplay=1`,
-                            thumbnail: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjcwIiB2aWV3Qm94PSIwIDAgMTAwIDcwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iNzAiIGZpbGw9IiMzYjU5OTgiLz48dGV4dCB4PSI1MCIgeT0iMzUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSI4IiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+RmFjZWJvb2sgVmlkZW88L3RleHQ+PC9zdmc+',
-                            title: 'Facebook Video'
-                        };
-                    }
+                if (url.includes('facebook.com') || url.includes('fb.watch')) {
+                    const encodedUrl = encodeURIComponent(url);
+                    return {
+                        videoId: btoa(url).replace(/=/g, ''),
+                        type: 'facebook',
+                        embedUrls: [
+                            `https://www.facebook.com/plugins/video.php?href=${encodedUrl}&show_text=0&autoplay=1&width=500`,
+                            `https://www.facebook.com/plugins/video.php?href=${encodedUrl}&show_text=0&autoplay=1`
+                        ],
+                        thumbnail: '',
+                        title: 'Facebook Video',
+                        description: 'Facebook Video'
+                    };
                 }
                 return null;
             }
 
             static parseInstagram(url) {
                 const patterns = [
-                    /instagram\.com\/(?:p|reel|tv)\/([^\/]+)/
+                    /instagram\.com\/(?:p|reel|tv)\/([^\/?]+)/,
+                    /instagram\.com\/p\/([^\/?]+)\/embed/
                 ];
 
                 for (const pattern of patterns) {
@@ -2839,11 +2256,16 @@
                     if (match) {
                         const code = match[1];
                         return {
-                            id: code,
+                            videoId: code,
                             type: 'instagram',
-                            embedUrl: `https://www.instagram.com/p/${code}/embed/`,
-                            thumbnail: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjcwIiB2aWV3Qm94PSIwIDAgMTAwIDcwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iNzAiIGZpbGw9InVybCgjZ3JhZGllbnQpIi8+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJncmFkaWVudCIgeDE9IjAlIiB5MT0iMCUiIHgyPSIxMDAlIiB5Mj0iMTAwJSI+PHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0iI2YwOTQ0MyIvPjxzdG9wIG9mZnNldD0iMTAwJSIgc3RvcC1jb2xvcj0iI2UxMzA2NyIvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjx0ZXh0IHg9IjUwIiB5PSIzNSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjgiIGZpbGw9IndoaXRlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5JbnN0YWdyYW08L3RleHQ+PC9zdmc+',
-                            title: 'Instagram Video'
+                            embedUrls: [
+                                `https://www.instagram.com/p/${code}/embed/`,
+                                `https://www.instagram.com/reel/${code}/embed/`,
+                                `https://www.instagram.com/tv/${code}/embed/`
+                            ],
+                            thumbnail: '',
+                            title: 'Instagram Video',
+                            description: 'Instagram Video'
                         };
                     }
                 }
@@ -2851,342 +2273,776 @@
             }
 
             static parseTikTok(url) {
-                const patterns = [
-                    /tiktok\.com\/@([^\/]+)\/video\/(\d+)/,
-                    /vm\.tiktok\.com\/([^\/]+)/
-                ];
-
-                for (const pattern of patterns) {
-                    const match = url.match(pattern);
-                    if (match) {
-                        const videoId = match[2] || match[1];
-                        return {
-                            id: videoId,
-                            type: 'tiktok',
-                            embedUrl: `https://www.tiktok.com/embed/v2/${videoId}`,
-                            thumbnail: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjcwIiB2aWV3Qm94PSIwIDAgMTAwIDcwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iNzAiIGZpbGw9IiMwMDAiLz48dGV4dCB4PSI1MCIgeT0iMzUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSI4IiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+VGlrVG9rPC90ZXh0Pjwvc3ZnPg==',
-                            title: 'TikTok Video'
-                        };
-                    }
-                }
-                return null;
-            }
-
-            static parseTwitter(url) {
-                const patterns = [
-                    /(?:twitter\.com|x\.com)\/([^\/]+)\/status\/(\d+)/
-                ];
-
-                for (const pattern of patterns) {
-                    const match = url.match(pattern);
-                    if (match) {
-                        const tweetId = match[2];
-                        return {
-                            id: tweetId,
-                            type: 'twitter',
-                            embedUrl: `https://twitframe.com/show?url=${encodeURIComponent(url)}`,
-                            thumbnail: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjcwIiB2aWV3Qm94PSIwIDAgMTAwIDcwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iNzAiIGZpbGw9IiMxZGE5ZWQiLz48dGV4dCB4PSI1MCIgeT0iMzUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSI4IiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+VHdpdHRlcjwvdGV4dD48L3N2Zz4=',
-                            title: 'Twitter Video'
-                        };
-                    }
-                }
-                return null;
-            }
-
-            static parseTwitch(url) {
-                const patterns = [
-                    /twitch\.tv\/videos\/(\d+)/,
-                    /twitch\.tv\/([^\/]+)\/clip\/([^\/]+)/
-                ];
-
-                for (const pattern of patterns) {
-                    const match = url.match(pattern);
-                    if (match) {
-                        if (url.includes('/clip/')) {
-                            return {
-                                id: match[2],
-                                type: 'twitch',
-                                embedUrl: `https://clips.twitch.tv/embed?clip=${match[2]}&parent=${window.location.hostname}`,
-                                thumbnail: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjcwIiB2aWV3Qm94PSIwIDAgMTAwIDcwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iNzAiIGZpbGw9IiM2NDE0N2UiLz48dGV4dCB4PSI1MCIgeT0iMzUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSI4IiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+VHdpdGNoIENsaXA8L3RleHQ+PC9zdmc+',
-                                title: 'Twitch Clip'
-                            };
-                        } else {
-                            return {
-                                id: match[1],
-                                type: 'twitch',
-                                embedUrl: `https://player.twitch.tv/?video=${match[1]}&parent=${window.location.hostname}`,
-                                thumbnail: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjcwIiB2aWV3Qm94PSIwIDAgMTAwIDcwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iNzAiIGZpbGw9IiM2NDE0N2UiLz48dGV4dCB4PSI1MCIgeT0iMzUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSI4IiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+VHdpdGNoIFZpZGVvPC90ZXh0Pjwvc3ZnPg==',
-                                title: 'Twitch Video'
-                            };
-                        }
-                    }
-                }
-                return null;
-            }
-
-            static parseStreamable(url) {
-                const patterns = [
-                    /streamable\.com\/([^\/?]+)/
-                ];
-
-                for (const pattern of patterns) {
-                    const match = url.match(pattern);
-                    if (match) {
-                        const videoId = match[1];
-                        return {
-                            id: videoId,
-                            type: 'streamable',
-                            embedUrl: `https://streamable.com/e/${videoId}`,
-                            thumbnail: `https://cdn-cf-east.streamable.com/image/${videoId}.jpg`,
-                            title: 'Streamable Video'
-                        };
-                    }
-                }
-                return null;
-            }
-
-            static parseDropbox(url) {
-                const patterns = [
-                    /dropbox\.com\/s\/([^\/]+)\/([^?]+)\?dl=0/
-                ];
-
-                for (const pattern of patterns) {
-                    const match = url.match(pattern);
-                    if (match) {
-                        const fileId = match[1];
-                        const filename = match[2];
-                        return {
-                            id: fileId,
-                            type: 'dropbox',
-                            embedUrl: url.replace('?dl=0', '?raw=1'),
-                            thumbnail: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjcwIiB2aWV3Qm94PSIwIDAgMTAwIDcwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iNzAiIGZpbGw9IiMwMDdiZWUiLz48dGV4dCB4PSI1MCIgeT0iMzUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSI4IiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+RHJvcGJveDwvdGV4dD48L3N2Zz4=',
-                            title: 'Dropbox Video'
-                        };
-                    }
-                }
-                return null;
-            }
-
-            static parseGooglePhotos(url) {
-                const patterns = [
-                    /photos\.app\.goo\.gl\/([^\/]+)/
-                ];
-
-                for (const pattern of patterns) {
-                    const match = url.match(pattern);
-                    if (match) {
-                        const photoId = match[1];
-                        return {
-                            id: photoId,
-                            type: 'photos',
-                            embedUrl: url,
-                            thumbnail: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjcwIiB2aWV3Qm94PSIwIDAgMTAwIDcwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iNzAiIGZpbGw9IiMzNGE4NTMiLz48dGV4dCB4PSI1MCIgeT0iMzUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSI4IiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+R29vZ2xlIFBob3RvczwvdGV4dD48L3N2Zz4=',
-                            title: 'Google Photos'
-                        };
-                    }
-                }
-                return null;
-            }
-
-            static parseDirectVideo(url) {
-                const videoExtensions = /\.(mp4|webm|mov|avi|mkv|flv|ogg|wmv|m4v|3gp|ogv)(\?.*)?$/i;
-                if (videoExtensions.test(url)) {
+                if (url.includes('tiktok.com')) {
+                    const videoId = url.split('/').pop().split('?')[0];
                     return {
-                        id: `direct-${Date.now()}`,
-                        type: 'direct',
-                        embedUrl: url,
-                        thumbnail: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjcwIiB2aWV3Qm94PSIwIDAgMTAwIDcwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iNzAiIGZpbGw9IiMzMzMiLz48cGF0aCBkPSJNMzUgMzBMNTAgNDVINjVMMzUiIHN0cm9rZT0iIzk5OSIgc3Ryb2tlLXdpZHRoPSIyIi8+PC9zdmc+',
-                        title: 'Direct Video File'
+                        videoId: videoId,
+                        type: 'tiktok',
+                        embedUrls: [
+                            `https://www.tiktok.com/embed/v2/${videoId}`,
+                            `https://www.tiktok.com/embed/${videoId}`
+                        ],
+                        thumbnail: '',
+                        title: 'TikTok Video',
+                        description: 'TikTok Video'
                     };
                 }
                 return null;
             }
 
-            static parseURL(url) {
-                const parsers = [
-                    this.parseYouTube,
-                    this.parseGoogleDrive,
-                    this.parseVimeo,
-                    this.parseDailymotion,
-                    this.parseFacebook,
-                    this.parseInstagram,
-                    this.parseTikTok,
-                    this.parseTwitter,
-                    this.parseTwitch,
-                    this.parseStreamable,
-                    this.parseDropbox,
-                    this.parseGooglePhotos,
-                    this.parseDirectVideo
-                ];
+            static parseTwitter(url) {
+                if (url.includes('twitter.com') || url.includes('x.com')) {
+                    const encodedUrl = encodeURIComponent(url);
+                    return {
+                        videoId: btoa(url).replace(/=/g, ''),
+                        type: 'twitter',
+                        embedUrls: [
+                            `https://twitframe.com/show?url=${encodedUrl}`,
+                            `https://platform.twitter.com/embed/Tweet.html?url=${encodedUrl}`
+                        ],
+                        thumbnail: '',
+                        title: 'Twitter/X Video',
+                        description: 'Twitter/X Video'
+                    };
+                }
+                return null;
+            }
 
-                for (const parser of parsers) {
-                    const result = parser.call(this, url);
-                    if (result) {
-                        return {
-                            videoId: result.id,
-                            type: result.type,
-                            embedUrl: result.embedUrl,
-                            originalUrl: url,
-                            thumbnail: result.thumbnail,
-                            title: result.title,
-                            description: `Video from ${result.type}`,
-                            fallbackUrls: result.fallbackUrls || []
-                        };
-                    }
+            static parseTwitch(url) {
+                const videoPattern = /twitch\.tv\/videos\/(\d+)/;
+                const clipPattern = /twitch\.tv\/(?:\w+)\/clip\/([^?]+)/;
+
+                const videoMatch = url.match(videoPattern);
+                if (videoMatch) {
+                    return {
+                        videoId: videoMatch[1],
+                        type: 'twitch',
+                        embedUrls: [
+                            `https://player.twitch.tv/?video=${videoMatch[1]}&parent=${window.location.hostname}&autoplay=true`,
+                            `https://player.twitch.tv/?video=${videoMatch[1]}&parent=localhost&autoplay=true`
+                        ],
+                        thumbnail: '',
+                        title: 'Twitch Video',
+                        description: 'Twitch Video'
+                    };
                 }
 
-                // Fallback for unknown URLs
-                const defaultSVG = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjcwIiB2aWV3Qm94PSIwIDAgMTAwIDcwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iNzAiIGZpbGw9IiMzMzMiLz48Y2lyY2xlIGN4PSI1MCIgY3k9IjM1IiByPSIyMCIgZmlsbD0iIzY2NiIvPjxwYXRoIGQ9Ik00MCAzNUw1NSA0NUw2NSAzNSIgc3Ryb2tlPSIjOTk5IiBzdHJva2Utd2lkdGg9IjMiLz48L3N2Zz4=';
+                const clipMatch = url.match(clipPattern);
+                if (clipMatch) {
+                    return {
+                        videoId: clipMatch[1],
+                        type: 'twitch',
+                        embedUrls: [
+                            `https://clips.twitch.tv/embed?clip=${clipMatch[1]}&parent=${window.location.hostname}&autoplay=true`,
+                            `https://clips.twitch.tv/embed?clip=${clipMatch[1]}&parent=localhost&autoplay=true`
+                        ],
+                        thumbnail: '',
+                        title: 'Twitch Clip',
+                        description: 'Twitch Clip'
+                    };
+                }
+
+                return null;
+            }
+
+            static parseStreamable(url) {
+                const pattern = /streamable\.com\/([^?]+)/;
+                const match = url.match(pattern);
+                if (match) {
+                    return {
+                        videoId: match[1],
+                        type: 'streamable',
+                        embedUrls: [
+                            `https://streamable.com/e/${match[1]}?autoplay=1`,
+                            `https://streamable.com/o/${match[1]}`
+                        ],
+                        thumbnail: '',
+                        title: 'Streamable Video',
+                        description: 'Streamable Video'
+                    };
+                }
+                return null;
+            }
+
+            static parseDropbox(url) {
+                const pattern = /dropbox\.com\/s\/([^\/]+)\/([^?]+)/;
+                const match = url.match(pattern);
+                if (match) {
+                    return {
+                        videoId: match[1],
+                        type: 'dropbox',
+                        embedUrls: [
+                            `https://www.dropbox.com/s/${match[1]}/${match[2]}?raw=1`,
+                            `https://dl.dropboxusercontent.com/s/${match[1]}/${match[2]}`
+                        ],
+                        thumbnail: '',
+                        title: 'Dropbox Video',
+                        description: 'Dropbox Video'
+                    };
+                }
+                return null;
+            }
+
+            static parseGooglePhotos(url) {
+                if (url.includes('photos.app.goo.gl') || url.includes('photos.google.com')) {
+                    return {
+                        videoId: btoa(url).replace(/=/g, ''),
+                        type: 'photos',
+                        embedUrls: [url],
+                        thumbnail: '',
+                        title: 'Google Photos',
+                        description: 'Google Photos'
+                    };
+                }
+                return null;
+            }
+
+            static parseDirectVideo(url) {
+                const videoExtensions = ['.mp4', '.webm', '.ogg', '.mov', '.mkv', '.flv', '.avi', '.m3u8'];
+                const lowerUrl = url.toLowerCase();
+                const isVideo = videoExtensions.some(ext => lowerUrl.endsWith(ext));
+
+                if (isVideo) {
+                    return {
+                        videoId: btoa(url).replace(/=/g, ''),
+                        type: 'direct',
+                        embedUrls: [url],
+                        thumbnail: '',
+                        title: 'Direct Video',
+                        description: 'Direct Video File'
+                    };
+                }
+                return null;
+            }
+
+            static parseUnknown(url) {
                 return {
-                    videoId: `other-${Date.now()}`,
+                    videoId: btoa(url).replace(/=/g, ''),
                     type: 'other',
-                    embedUrl: url,
-                    originalUrl: url,
-                    thumbnail: defaultSVG,
+                    embedUrls: [url],
+                    thumbnail: '',
                     title: 'Custom Video',
-                    description: 'Video from unknown source',
-                    fallbackUrls: []
+                    description: 'Video from unknown source'
                 };
             }
         }
 
-        // Professional YouTube Data Service
-        class YouTubeDataService {
+        // ==================== ENHANCED VIDEO PLAYER CONTROLLER ====================
+        class EnhancedVideoPlayer {
+            constructor(videoManager) {
+                this.videoManager = videoManager;
+                this.videoContainer = document.querySelector('.video-container');
+                this.videoPlayer = document.getElementById('videoPlayer');
+                this.currentVideoTitle = document.getElementById('currentVideoTitle');
+                this.currentVideoDescription = document.getElementById('currentVideoDescription');
+                this.currentPlatformBadge = document.getElementById('currentPlatformBadge');
+                this.fallbackMessage = document.getElementById('fallbackMessage');
+                this.currentEmbedIndex = 0;
+                this.currentVideoData = null;
+                this.setupFallbackOptions();
+            }
+
+            async loadVideo(video) {
+                if (!video) return;
+
+                this.videoManager.loadVideoById(video.id);
+                this.fallbackMessage.style.display = 'none';
+                this.currentEmbedIndex = 0;
+                this.currentVideoData = video;
+
+                // Show loading state
+                this.currentVideoTitle.textContent = 'Loading...';
+                this.currentVideoDescription.textContent = 'Fetching video information...';
+
+                let embedUrls = video.embedUrls || [video.url || ""];
+                let badgeClass = "";
+                let badgeText = "";
+
+                // Determine platform and set appropriate badge
+                switch (video.type) {
+                    case "youtube":
+                        badgeClass = "badge-youtube";
+                        badgeText = "YouTube";
+                        break;
+                    case "youtube_playlist":
+                        badgeClass = "badge-youtube";
+                        badgeText = "YouTube Playlist";
+                        break;
+                    case "drive":
+                        badgeClass = "badge-drive";
+                        badgeText = "Google Drive";
+                        break;
+                    case "vimeo":
+                        badgeClass = "badge-vimeo";
+                        badgeText = "Vimeo";
+                        break;
+                    case "dailymotion":
+                        badgeClass = "badge-dailymotion";
+                        badgeText = "Dailymotion";
+                        break;
+                    case "facebook":
+                        badgeClass = "badge-facebook";
+                        badgeText = "Facebook";
+                        break;
+                    case "instagram":
+                        badgeClass = "badge-instagram";
+                        badgeText = "Instagram";
+                        break;
+                    case "tiktok":
+                        badgeClass = "badge-tiktok";
+                        badgeText = "TikTok";
+                        break;
+                    case "twitter":
+                        badgeClass = "badge-twitter";
+                        badgeText = "Twitter/X";
+                        break;
+                    case "twitch":
+                        badgeClass = "badge-twitch";
+                        badgeText = "Twitch";
+                        break;
+                    case "streamable":
+                        badgeClass = "badge-streamable";
+                        badgeText = "Streamable";
+                        break;
+                    case "dropbox":
+                        badgeClass = "badge-dropbox";
+                        badgeText = "Dropbox";
+                        break;
+                    case "photos":
+                        badgeClass = "badge-photos";
+                        badgeText = "Google Photos";
+                        break;
+                    case "direct":
+                        // For direct video files, use a video element instead of iframe
+                        this.loadDirectVideo(video, embedUrls[0]);
+                        return;
+                    default:
+                        badgeClass = "badge-other";
+                        badgeText = video.type.charAt(0).toUpperCase() + video.type.slice(1);
+                }
+
+                // Set up loading timeout and error handling
+                const loadingTimeout = setTimeout(() => {
+                    this.showFallbackMessage(video);
+                }, 10000);
+
+                this.videoPlayer.onload = () => {
+                    clearTimeout(loadingTimeout);
+                    this.videoPlayer.style.display = 'block';
+                    this.videoManager.showNotification(`Loaded ${badgeText} video`, 'success');
+                };
+
+                this.videoPlayer.onerror = () => {
+                    clearTimeout(loadingTimeout);
+                    this.handleEmbedError(video, embedUrls);
+                };
+
+                // Load the first embed URL
+                this.videoPlayer.src = embedUrls[0];
+                this.videoPlayer.style.display = 'block';
+
+                // Update UI with video information
+                this.currentVideoTitle.textContent = video.title;
+                this.currentVideoDescription.textContent = video.description;
+                this.currentPlatformBadge.className = `platform-badge ${badgeClass}`;
+                this.currentPlatformBadge.textContent = badgeText;
+
+                this.setupFallbackOptions(video);
+            }
+
+            loadDirectVideo(video, url) {
+                // Replace iframe with video element for direct video files
+                const videoContainer = this.videoPlayer.parentElement;
+
+                // Remove existing video elements
+                const existingVideo = videoContainer.querySelector('video');
+                if (existingVideo) {
+                    existingVideo.remove();
+                }
+
+                // Hide the iframe
+                this.videoPlayer.style.display = 'none';
+
+                // Create video element
+                const videoElement = document.createElement('video');
+                videoElement.controls = true;
+                videoElement.autoplay = true;
+                videoElement.style.width = '100%';
+                videoElement.style.height = '100%';
+                videoElement.style.position = 'absolute';
+                videoElement.style.top = '0';
+                videoElement.style.left = '0';
+
+                const source = document.createElement('source');
+                source.src = url;
+                source.type = this.getVideoMimeType(url);
+
+                videoElement.appendChild(source);
+                videoContainer.appendChild(videoElement);
+
+                // Update UI
+                this.currentVideoTitle.textContent = video.title;
+                this.currentVideoDescription.textContent = video.description;
+                this.currentPlatformBadge.className = 'platform-badge badge-other';
+                this.currentPlatformBadge.textContent = 'Direct Video';
+
+                this.videoManager.showNotification('Loaded direct video file', 'success');
+            }
+
+            getVideoMimeType(url) {
+                const extension = url.split('.').pop().toLowerCase();
+                const mimeTypes = {
+                    'mp4': 'video/mp4',
+                    'webm': 'video/webm',
+                    'ogg': 'video/ogg',
+                    'mov': 'video/quicktime',
+                    'mkv': 'video/x-matroska',
+                    'flv': 'video/x-flv',
+                    'avi': 'video/x-msvideo',
+                    'm3u8': 'application/x-mpegURL'
+                };
+                return mimeTypes[extension] || 'video/mp4';
+            }
+
+            handleEmbedError(video, embedUrls) {
+                this.currentEmbedIndex++;
+
+                if (this.currentEmbedIndex < embedUrls.length) {
+                    // Try next embed URL
+                    this.videoPlayer.src = embedUrls[this.currentEmbedIndex];
+                    this.videoManager.showNotification(`Trying alternative embed... (${this.currentEmbedIndex + 1}/${embedUrls.length})`, 'info');
+                } else {
+                    // No more fallbacks, show error message
+                    this.showFallbackMessage(video);
+                    this.videoManager.showNotification('Could not load video with any available method', 'error');
+                }
+            }
+
+            showFallbackMessage(video = null) {
+                this.fallbackMessage.style.display = 'flex';
+                if (video) {
+                    this.setupFallbackOptions(video);
+                }
+            }
+
+            setupFallbackOptions(video = null) {
+                const openOriginal = document.getElementById('openOriginal');
+                const downloadVideo = document.getElementById('downloadVideo');
+
+                if (video) {
+                    openOriginal.onclick = () => {
+                        let url;
+                        switch (video.type) {
+                            case 'drive':
+                                url = `https://drive.google.com/file/d/${video.videoId}/view?usp=sharing`;
+                                break;
+                            case 'youtube_playlist':
+                                url = `https://www.youtube.com/playlist?list=${video.videoId}`;
+                                break;
+                            case 'youtube':
+                                url = `https://www.youtube.com/watch?v=${video.videoId}`;
+                                break;
+                            default:
+                                url = video.originalUrl || video.url;
+                        }
+                        window.open(url, '_blank');
+                        this.videoManager.showNotification('Opening original video...', 'success');
+                    };
+
+                    downloadVideo.onclick = () => {
+                        let url;
+                        if (video.type === 'drive') {
+                            url = `https://drive.google.com/uc?export=download&id=${video.videoId}`;
+                        } else if (video.type === 'direct') {
+                            url = video.url;
+                        } else {
+                            url = video.originalUrl || video.url;
+                        }
+                        window.open(url, '_blank');
+                        this.videoManager.showNotification('Starting download...', 'success');
+                    };
+                }
+            }
+        }
+
+        // ==================== ENHANCED VIDEO MANAGER ====================
+        class EnhancedVideoManager {
             constructor() {
-                this.useFallback = true;
-                this.cache = new Map();
-                this.cacheTimeout = 10 * 60 * 1000; // 10 minutes
-            }
+                this.allVideos = [];
+                this.filteredVideos = [];
+                this.currentVideoId = null;
+                this.currentPlatform = 'all';
+                this.currentSearchTerm = '';
+                this.currentSortOption = 'default';
+                this.currentFilters = { platform: 'all' };
+                this.recentlyPlayed = [];
+                this.isLoading = false;
 
-            async getVideoData(videoId) {
-                const cacheKey = `video-${videoId}`;
-                const cached = this.cache.get(cacheKey);
-
-                if (cached && Date.now() - cached.timestamp < this.cacheTimeout) {
-                    return cached.data;
-                }
-
-                try {
-                    // Try oEmbed API first (no API key required)
-                    const response = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`);
-
-                    if (response.ok) {
-                        const data = await response.json();
-                        const videoData = {
-                            title: data.title,
-                            description: 'Description available on YouTube',
-                            thumbnail: data.thumbnail_url,
-                            duration: '--:--' // oEmbed doesn't provide duration
-                        };
-
-                        this.cache.set(cacheKey, {
-                            data: videoData,
-                            timestamp: Date.now()
-                        });
-
-                        return videoData;
-                    }
-                } catch (error) {
-                    console.log('YouTube oEmbed failed, using fallback');
-                }
-
-                // Fallback: Use basic video data without API key
-                const fallbackData = {
-                    title: `YouTube Video (${videoId})`,
-                    description: 'YouTube video - watch on YouTube for full details',
-                    thumbnail: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
-                    duration: '--:--'
+                this.services = {
+                    airtable: new AirtableService('patPnJxM2TRWXuka0.087c43bbf8e133080578197ef90fbd4ab5aba7dd7b77194e54fc7a98c5707899'),
+                    metadata: new VideoMetadataService()
                 };
 
-                this.cache.set(cacheKey, {
-                    data: fallbackData,
-                    timestamp: Date.now()
-                });
-
-                return fallbackData;
+                this.searchService = new SearchService(this.services.airtable);
+                this.cache = new Map();
+                this.searchTimeout = null;
             }
 
-            formatDuration(duration) {
-                try {
-                    const match = duration.match(/PT(\d+H)?(\d+M)?(\d+S)?/);
-                    const hours = (match[1] ? parseInt(match[1]) : 0);
-                    const minutes = (match[2] ? parseInt(match[2]) : 0);
-                    const seconds = (match[3] ? parseInt(match[3]) : 0);
+            async loadVideos() {
+                this.isLoading = true;
 
-                    if (hours > 0) {
-                        return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-                    } else {
-                        return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                try {
+                    // Try to load from cache first
+                    const cached = this.loadFromStorage(CONFIG.STORAGE.ALL_VIDEOS_KEY);
+                    if (cached && cached.length > 0) {
+                        this.allVideos = cached;
+                        this.showNotification(`Loaded ${this.allVideos.length} videos from cache`, 'success');
                     }
+
+                    // Always refresh from Airtable for latest data
+                    const freshVideos = await this.services.airtable.getAllVideos();
+                    this.allVideos = freshVideos;
+                    this.saveToStorage(CONFIG.STORAGE.ALL_VIDEOS_KEY, this.allVideos);
+
+                    await this.searchService.buildSearchIndex(this.allVideos);
+
+                    // Restore application state
+                    this.restoreApplicationState();
+
+                    this.applyFiltersAndSearch();
+
+                    if (freshVideos.length > 0) {
+                        this.showNotification(`Synced ${freshVideos.length} videos from cloud`, 'success');
+                    }
+
+                    return this.allVideos;
                 } catch (error) {
-                    return '--:--';
+                    console.error('Error loading videos:', error);
+                    this.showNotification('Failed to load videos: ' + error.message, 'error');
+                    return [];
+                } finally {
+                    this.isLoading = false;
                 }
             }
-        }
 
-        // Professional Sorting Service
-        class SortingService {
-            static sortVideos(videos, sortOption, recentlyPlayed = []) {
-                const sortedVideos = [...videos];
+            applyFiltersAndSearch() {
+                let results = [...this.allVideos];
+
+                // Apply platform filter
+                if (this.currentFilters.platform && this.currentFilters.platform !== 'all') {
+                    results = results.filter(video => video.type === this.currentFilters.platform);
+                }
+
+                // Apply search
+                if (this.currentSearchTerm && this.currentSearchTerm.length >= CONFIG.SEARCH.MIN_SEARCH_LENGTH) {
+                    results = this.searchVideos(results, this.currentSearchTerm);
+                }
+
+                // Apply sorting
+                this.filteredVideos = this.sortVideos(results, this.currentSortOption);
+
+                this.updateUI();
+            }
+
+            searchVideos(videos, searchTerm) {
+                const searchLower = searchTerm.toLowerCase();
+                return videos.filter(video => {
+                    return CONFIG.SEARCH.SEARCH_FIELDS.some(field => {
+                        const fieldValue = String(video[field] || '').toLowerCase();
+                        return CONFIG.SEARCH.FUZZY_SEARCH
+                            ? this.fuzzyMatch(fieldValue, searchLower)
+                            : fieldValue.includes(searchLower);
+                    });
+                });
+            }
+
+            fuzzyMatch(text, search) {
+                let searchIndex = 0;
+                for (let i = 0; i < text.length; i++) {
+                    if (text[i] === search[searchIndex]) {
+                        searchIndex++;
+                    }
+                    if (searchIndex === search.length) return true;
+                }
+                return false;
+            }
+
+            sortVideos(videos, sortOption) {
+                const sorted = [...videos];
 
                 switch (sortOption) {
                     case 'title_asc':
-                        sortedVideos.sort((a, b) => a.title.localeCompare(b.title));
+                        sorted.sort((a, b) => a.title.localeCompare(b.title));
                         break;
                     case 'title_desc':
-                        sortedVideos.sort((a, b) => b.title.localeCompare(a.title));
+                        sorted.sort((a, b) => b.title.localeCompare(a.title));
                         break;
                     case 'date_desc':
-                        sortedVideos.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                        sorted.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
                         break;
                     case 'date_asc':
-                        sortedVideos.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+                        sorted.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
                         break;
                     case 'duration_asc':
-                        sortedVideos.sort((a, b) => {
-                            const aDuration = this.parseDurationToSeconds(a.duration);
-                            const bDuration = this.parseDurationToSeconds(b.duration);
-                            return aDuration - bDuration;
-                        });
+                        sorted.sort((a, b) => this.parseDuration(a.duration) - this.parseDuration(b.duration));
                         break;
                     case 'duration_desc':
-                        sortedVideos.sort((a, b) => {
-                            const aDuration = this.parseDurationToSeconds(a.duration);
-                            const bDuration = this.parseDurationToSeconds(b.duration);
-                            return bDuration - aDuration;
-                        });
+                        sorted.sort((a, b) => this.parseDuration(b.duration) - this.parseDuration(a.duration));
                         break;
                     case 'popularity':
-                        sortedVideos.sort((a, b) => {
-                            const aScore = this.calculatePopularityScore(a, recentlyPlayed);
-                            const bScore = this.calculatePopularityScore(b, recentlyPlayed);
+                        sorted.sort((a, b) => {
+                            const aScore = this.calculatePopularityScore(a);
+                            const bScore = this.calculatePopularityScore(b);
                             return bScore - aScore;
                         });
                         break;
                     case 'recently_played':
-                        sortedVideos.sort((a, b) => {
-                            const aPlayed = recentlyPlayed.find(v => v.id === a.id);
-                            const bPlayed = recentlyPlayed.find(v => v.id === b.id);
-
+                        sorted.sort((a, b) => {
+                            const aPlayed = this.recentlyPlayed.find(v => v.id === a.id);
+                            const bPlayed = this.recentlyPlayed.find(v => v.id === b.id);
                             if (!aPlayed && !bPlayed) return 0;
                             if (!aPlayed) return 1;
                             if (!bPlayed) return -1;
-
                             return new Date(bPlayed.playedAt) - new Date(aPlayed.playedAt);
                         });
                         break;
-                    case 'default':
-                    default:
-                        // Maintain original order
-                        break;
                 }
 
-                return sortedVideos;
+                return sorted;
             }
 
-            static parseDurationToSeconds(duration) {
-                if (!duration || duration === '--:--') return 0;
+            loadVideoById(videoId) {
+                const videoIndex = this.filteredVideos.findIndex(v => v.id === videoId);
+                if (videoIndex !== -1) {
+                    this.currentVideoId = videoId;
+                    this.saveToStorage(CONFIG.STORAGE.CURRENT_VIDEO_KEY, videoId);
+                    this.addToRecentlyPlayed(videoId);
+                    this.updateUI();
+                    return this.filteredVideos[videoIndex];
+                }
+                return null;
+            }
 
+            nextVideo() {
+                if (this.filteredVideos.length === 0) return null;
+
+                const currentIndex = this.filteredVideos.findIndex(v => v.id === this.currentVideoId);
+                let nextIndex = currentIndex + 1;
+
+                if (nextIndex >= this.filteredVideos.length) {
+                    nextIndex = 0; // Loop to beginning
+                }
+
+                return this.loadVideoById(this.filteredVideos[nextIndex].id);
+            }
+
+            prevVideo() {
+                if (this.filteredVideos.length === 0) return null;
+
+                const currentIndex = this.filteredVideos.findIndex(v => v.id === this.currentVideoId);
+                let prevIndex = currentIndex - 1;
+
+                if (prevIndex < 0) {
+                    prevIndex = this.filteredVideos.length - 1; // Loop to end
+                }
+
+                return this.loadVideoById(this.filteredVideos[prevIndex].id);
+            }
+
+            addToRecentlyPlayed(videoId) {
+                const existingIndex = this.recentlyPlayed.findIndex(v => v.id === videoId);
+
+                if (existingIndex !== -1) {
+                    this.recentlyPlayed.splice(existingIndex, 1);
+                }
+
+                this.recentlyPlayed.unshift({
+                    id: videoId,
+                    playedAt: new Date().toISOString(),
+                    playCount: (this.getRecentlyPlayedData(videoId)?.playCount || 0) + 1
+                });
+
+                // Keep only last 50 entries
+                this.recentlyPlayed = this.recentlyPlayed.slice(0, 50);
+                this.saveToStorage(CONFIG.STORAGE.RECENTLY_PLAYED_KEY, this.recentlyPlayed);
+            }
+
+            getRecentlyPlayedData(videoId) {
+                return this.recentlyPlayed.find(v => v.id === videoId);
+            }
+
+            calculatePopularityScore(video) {
+                const playedData = this.getRecentlyPlayedData(video.id);
+                const playCount = playedData?.playCount || 0;
+                const viewCount = video.viewCount || 0;
+                return viewCount + (playCount * 10);
+            }
+
+            saveToStorage(key, data) {
+                try {
+                    localStorage.setItem(key, JSON.stringify(data));
+                } catch (error) {
+                    console.error('Error saving to storage:', error);
+                }
+            }
+
+            loadFromStorage(key) {
+                try {
+                    const data = localStorage.getItem(key);
+                    return data ? JSON.parse(data) : null;
+                } catch (error) {
+                    console.error('Error loading from storage:', error);
+                    return null;
+                }
+            }
+
+            restoreApplicationState() {
+                // Restore current video
+                const savedVideoId = this.loadFromStorage(CONFIG.STORAGE.CURRENT_VIDEO_KEY);
+                if (savedVideoId && this.allVideos.some(v => v.id === savedVideoId)) {
+                    this.currentVideoId = savedVideoId;
+                }
+
+                // Restore recently played
+                this.recentlyPlayed = this.loadFromStorage(CONFIG.STORAGE.RECENTLY_PLAYED_KEY) || [];
+
+                // Restore filter state
+                const savedState = this.loadFromStorage(CONFIG.STORAGE.FILTER_STATE_KEY);
+                if (savedState) {
+                    this.currentPlatform = savedState.platform || 'all';
+                    this.currentSearchTerm = savedState.searchTerm || '';
+                    this.currentSortOption = savedState.sortOption || 'default';
+                    this.currentFilters.platform = this.currentPlatform;
+                }
+            }
+
+            saveFilterState() {
+                const state = {
+                    platform: this.currentPlatform,
+                    searchTerm: this.currentSearchTerm,
+                    sortOption: this.currentSortOption
+                };
+                this.saveToStorage(CONFIG.STORAGE.FILTER_STATE_KEY, state);
+            }
+
+            updateUI() {
+                this.updateVideoCount();
+                this.renderPlaylist();
+                this.updateNavigationButtons();
+                this.updateActiveVideoHighlight();
+                this.saveFilterState();
+            }
+
+            updateVideoCount() {
+                const countElement = document.getElementById('videoCount');
+                if (countElement) {
+                    countElement.textContent = `${this.filteredVideos.length} video${this.filteredVideos.length !== 1 ? 's' : ''}`;
+                }
+            }
+
+            renderPlaylist() {
+                const videoList = document.getElementById('videoList');
+                if (!videoList) return;
+
+                if (this.filteredVideos.length === 0) {
+                    videoList.innerHTML = this.getEmptyStateHTML();
+                    return;
+                }
+
+                videoList.innerHTML = this.filteredVideos.map((video, index) =>
+                    this.createVideoItemHTML(video, index)
+                ).join('');
+            }
+
+            createVideoItemHTML(video, index) {
+                const isActive = video.id === this.currentVideoId;
+                const recentlyPlayed = this.getRecentlyPlayedData(video.id);
+                const popularityScore = this.calculatePopularityScore(video);
+
+                return `
+                    <div class="video-item ${video.type} ${isActive ? 'active' : ''}" 
+                         data-video-id="${video.id}" data-index="${index}">
+                        <img class="video-thumb" src="${this.getThumbnailUrl(video)}" 
+                             alt="${video.title}" loading="lazy"
+                             onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjcwIiB2aWV3Qm94PSIwIDAgMTAwIDcwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iNzAiIGZpbGw9IiMzMzMiLz48cGF0aCBkPSJNMzUgMzBMNTAgNDVINjVMMzUiIHN0cm9rZT0iIzk5OSIgc3Ryb2tlLXdpZHRoPSIyIi8+PC9zdmc+'">
+                        <div class="video-item-info">
+                            <div class="video-item-title">${this.highlightSearchTerms(video.title)}</div>
+                            <div class="video-item-meta">
+                                <span class="video-duration">${video.duration || '--:--'}</span>
+                                <span>${video.type.charAt(0).toUpperCase() + video.type.slice(1)}</span>
+                                ${recentlyPlayed ? '<span class="recent-badge" title="Recently played"><i class="fas fa-history"></i></span>' : ''}
+                                ${popularityScore > 10 ? '<span class="popularity-badge" title="Popular video"><i class="fas fa-fire"></i></span>' : ''}
+                                ${isActive ? '<span class="currently-playing-badge"><i class="fas fa-play"></i> Playing</span>' : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            getEmptyStateHTML() {
+                let message = 'No videos available';
+                let description = 'Try adjusting your search or filters';
+
+                if (this.currentSearchTerm) {
+                    message = 'No videos found';
+                    description = `No results for "${this.currentSearchTerm}"`;
+                } else if (this.currentFilters.platform !== 'all') {
+                    message = `No ${this.currentFilters.platform} videos`;
+                    description = 'Try a different platform filter';
+                }
+
+                return `
+                    <div class="empty-state">
+                        <i class="fas fa-search"></i>
+                        <h3>${message}</h3>
+                        <p>${description}</p>
+                    </div>
+                `;
+            }
+
+            updateNavigationButtons() {
+                const prevBtn = document.getElementById('prevBtn');
+                const nextBtn = document.getElementById('nextBtn');
+
+                if (!prevBtn || !nextBtn) return;
+
+                const hasVideos = this.filteredVideos.length > 0;
+                const currentIndex = this.filteredVideos.findIndex(v => v.id === this.currentVideoId);
+                const hasSelection = currentIndex !== -1;
+
+                prevBtn.disabled = !hasVideos || !hasSelection || currentIndex === 0;
+                nextBtn.disabled = !hasVideos || !hasSelection || currentIndex === this.filteredVideos.length - 1;
+            }
+
+            updateActiveVideoHighlight() {
+                document.querySelectorAll('.video-item').forEach(item => {
+                    const videoId = item.dataset.videoId;
+                    item.classList.toggle('active', videoId === this.currentVideoId);
+                });
+            }
+
+            getThumbnailUrl(video) {
+                if (video.thumbnail) return video.thumbnail;
+
+                if (video.type.includes('youtube')) {
+                    return video.type === 'youtube_playlist'
+                        ? 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjcwIiB2aWV3Qm94PSIwIDAgMTAwIDcwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iNzAiIGZpbGw9IiNmMTBhMGIiLz48dGV4dCB4PSI1MCIgeT0iMzUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxMCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPllvdVR1YmUgUGxheWxpc3Q8L3RleHQ+PC9zdmc+'
+                        : `https://img.youtube.com/vi/${video.videoId}/hqdefault.jpg`;
+                } else if (video.type === 'drive') {
+                    return `https://drive.google.com/thumbnail?id=${video.videoId}&sz=w400`;
+                }
+
+                return 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjcwIiB2aWV3Qm94PSIwIDAgMTAwIDcwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iNzAiIGZpbGw9IiMzMzMiLz48cGF0aCBkPSJNMzUgMzBMNTAgNDVINjVMMzUiIHN0cm9rZT0iIzk5OSIgc3Ryb2tlLXdpZHRoPSIyIi8+PC9zdmc+';
+            }
+
+            highlightSearchTerms(text) {
+                if (!this.currentSearchTerm || !text) return text;
+                const regex = new RegExp(`(${this.currentSearchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+                return text.replace(regex, '<mark class="search-highlight">$1</mark>');
+            }
+
+            parseDuration(duration) {
+                if (!duration || duration === '--:--') return 0;
                 const parts = duration.split(':');
                 if (parts.length === 3) {
                     return parseInt(parts[0]) * 3600 + parseInt(parts[1]) * 60 + parseInt(parts[2]);
@@ -3196,17 +3052,290 @@
                 return 0;
             }
 
-            static calculatePopularityScore(video, recentlyPlayed) {
-                const viewCount = video.viewCount || 0;
-                const playedData = recentlyPlayed.find(v => v.id === video.id);
-                const playCount = playedData?.playCount || 0;
+            showNotification(message, type = 'success') {
+                const notification = document.getElementById('notification');
+                const notificationText = document.getElementById('notificationText');
 
-                // Weight recent plays higher than view counts
-                return viewCount + (playCount * 10);
+                if (!notification || !notificationText) return;
+
+                notificationText.textContent = message;
+                notification.className = `notification ${type} show`;
+
+                setTimeout(() => {
+                    notification.classList.remove('show');
+                }, 4000);
+            }
+
+            async addCustomVideo(url) {
+                if (!url) {
+                    this.showNotification('Please enter a video URL', 'warning');
+                    return null;
+                }
+
+                try {
+                    const parsed = await UniversalVideoParser.parseURL(url);
+                    if (!parsed) {
+                        throw new Error('Unsupported video URL format');
+                    }
+
+                    let videoData = {
+                        id: parsed.videoId,
+                        title: parsed.title,
+                        description: parsed.description,
+                        type: parsed.type,
+                        duration: '--:--',
+                        url: parsed.embedUrls[0],
+                        embedUrls: parsed.embedUrls,
+                        thumbnail: parsed.thumbnail,
+                        originalUrl: parsed.originalUrl
+                    };
+
+                    const createdVideo = await this.services.airtable.addVideo(videoData);
+
+                    // Update local state
+                    this.allVideos.push(createdVideo);
+                    await this.searchService.buildSearchIndex(this.allVideos);
+                    this.saveToStorage(CONFIG.STORAGE.ALL_VIDEOS_KEY, this.allVideos);
+
+                    // Refresh view
+                    this.applyFiltersAndSearch();
+
+                    this.showNotification('Video added successfully!', 'success');
+                    return createdVideo;
+
+                } catch (error) {
+                    console.error('Error adding video:', error);
+                    this.showNotification('Failed to add video: ' + error.message, 'error');
+                    return null;
+                }
             }
         }
 
-        // Create floating particles for background
+        // ==================== SUPPORTING SERVICES ====================
+        class AirtableService {
+            constructor(apiKey) {
+                this.apiKey = apiKey;
+                this.baseUrl = `${CONFIG.AIRTABLE.API_URL}/${CONFIG.AIRTABLE.BASE_ID}/${CONFIG.AIRTABLE.TABLE_NAME}`;
+                this.headers = {
+                    'Authorization': `Bearer ${this.apiKey}`,
+                    'Content-Type': 'application/json'
+                };
+                this.retryCount = 3;
+                this.retryDelay = 1000;
+                this.cache = new Map();
+            }
+
+            async handleRequest(url, options, retries = this.retryCount) {
+                try {
+                    const response = await fetch(url, options);
+                    if (!response.ok) {
+                        if (response.status === 429 && retries > 0) {
+                            await this.delay(this.retryDelay);
+                            return this.handleRequest(url, options, retries - 1);
+                        }
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                    return await response.json();
+                } catch (error) {
+                    if (retries > 0) {
+                        await this.delay(this.retryDelay);
+                        return this.handleRequest(url, options, retries - 1);
+                    }
+                    throw error;
+                }
+            }
+
+            delay(ms) {
+                return new Promise(resolve => setTimeout(resolve, ms));
+            }
+
+            async getAllVideos() {
+                try {
+                    const data = await this.handleRequest(this.baseUrl, {
+                        method: 'GET',
+                        headers: this.headers
+                    });
+
+                    if (!data.records || !Array.isArray(data.records)) {
+                        throw new Error('Invalid Airtable response format');
+                    }
+
+                    const videos = data.records.map(record => ({
+                        id: record.id,
+                        videoId: record.fields.videoId || record.id,
+                        title: record.fields.title || '',
+                        description: record.fields.description || '',
+                        type: record.fields.type || 'other',
+                        duration: record.fields.duration || '--:--',
+                        url: record.fields.url || '',
+                        embedUrls: record.fields.embedUrls || [record.fields.url || ''],
+                        thumbnail: record.fields.thumbnail || null,
+                        createdAt: record.fields.createdAt || new Date().toISOString(),
+                        status: record.fields.status || 'active',
+                        viewCount: record.fields.viewCount || 0,
+                        tags: record.fields.tags || [],
+                        category: record.fields.category || 'general',
+                        author: record.fields.author || ''
+                    })).filter(video => video.status !== 'inactive');
+
+                    return videos;
+                } catch (error) {
+                    console.error('Error fetching videos from Airtable:', error);
+                    throw new Error('Failed to load videos from cloud storage');
+                }
+            }
+
+            async addVideo(video) {
+                try {
+                    // Convert embedUrls array → comma-separated string (Airtable-friendly)
+                    const embedUrlsString = Array.isArray(video.embedUrls)
+                        ? video.embedUrls.join(', ')
+                        : (video.embedUrls || video.url || '');
+
+                    const record = {
+                        fields: {
+                            videoId: String(video.id || ''),
+                            title: String(video.title || 'Untitled Video'),
+                            description: String(video.description || ''),
+                            type: String(video.type || 'other'),
+                            duration: String(video.duration || '--:--'),
+                            url: String(video.url || ''),
+                            embedUrls: embedUrlsString,  // Now a string, not array
+                            thumbnail: video.thumbnail ? [{ url: video.thumbnail }] : undefined,
+                            createdAt: new Date().toISOString(),
+                            status: 'active',
+                            viewCount: 0,
+                            tags: video.tags?.join(', ') || '',
+                            category: video.category || 'general',
+                            author: video.author || 'Custom User'
+                        }
+                    };
+
+                    // Remove undefined fields (Airtable rejects them)
+                    Object.keys(record.fields).forEach(key =>
+                        record.fields[key] === undefined && delete record.fields[key]
+                    );
+
+                    const data = await this.handleRequest(this.baseUrl, {
+                        method: 'POST',
+                        headers: this.headers,
+                        body: JSON.stringify({ records: [record] })
+                    });
+
+                    if (!data.records || data.records.length === 0) {
+                        throw new Error('No record returned from Airtable');
+                    }
+
+                    this.clearCache();
+                    const createdRecord = data.records[0];
+                    return {
+                        id: createdRecord.id,
+                        videoId: createdRecord.fields.videoId,
+                        title: createdRecord.fields.title || 'Untitled',
+                        description: createdRecord.fields.description || '',
+                        type: createdRecord.fields.type || 'other',
+                        duration: createdRecord.fields.duration || '--:--',
+                        url: createdRecord.fields.url || '',
+                        embedUrls: createdRecord.fields.embedUrls?.split(', ') || [],
+                        thumbnail: createdRecord.fields.thumbnail?.[0]?.url || null,
+                        createdAt: createdRecord.fields.createdAt,
+                        status: createdRecord.fields.status || 'active',
+                        viewCount: createdRecord.fields.viewCount || 0,
+                        tags: createdRecord.fields.tags?.split(', ') || [],
+                        category: createdRecord.fields.category || 'general',
+                        author: createdRecord.fields.author || ''
+                    };
+                } catch (error) {
+                    console.error('Airtable add error:', error);
+                    throw error;
+                }
+            }
+            clearCache() {
+                this.cache.clear();
+            }
+        }
+
+        class VideoMetadataService {
+            constructor() {
+                this.cache = new Map();
+                this.cacheTimeout = 24 * 60 * 60 * 1000;
+            }
+
+            async fetchMetadata(videoData) {
+                // Basic implementation - can be extended for specific platforms
+                return {
+                    title: videoData.title,
+                    author: '',
+                    duration: '',
+                    thumbnail: videoData.thumbnail,
+                    description: videoData.description,
+                    publishDate: ''
+                };
+            }
+        }
+
+        class SearchService {
+            constructor(airtableService) {
+                this.airtableService = airtableService;
+                this.searchIndex = new Map();
+                this.suggestionCache = new Map();
+            }
+
+            async buildSearchIndex(videos) {
+                this.searchIndex.clear();
+                videos.forEach(video => {
+                    const titleWords = this.tokenize(video.title);
+                    titleWords.forEach(word => {
+                        if (!this.searchIndex.has(word)) this.searchIndex.set(word, new Set());
+                        this.searchIndex.get(word).add(video.id);
+                    });
+                    if (!this.searchIndex.has(video.type)) this.searchIndex.set(video.type, new Set());
+                    this.searchIndex.get(video.type).add(video.id);
+                });
+            }
+
+            tokenize(text) {
+                return text.toLowerCase()
+                    .replace(/[^\w\s]/g, '')
+                    .split(/\s+/)
+                    .filter(word => word.length > 2);
+            }
+
+            getSuggestions(query, videos, maxResults = CONFIG.SEARCH.MAX_SUGGESTIONS) {
+                if (query.length < CONFIG.SEARCH.MIN_SEARCH_LENGTH) return [];
+                const cacheKey = `suggestions-${query}`;
+                if (this.suggestionCache.has(cacheKey)) return this.suggestionCache.get(cacheKey);
+
+                const suggestions = [];
+                const queryLower = query.toLowerCase();
+
+                videos.forEach(video => {
+                    if (video.title.toLowerCase().includes(queryLower)) {
+                        suggestions.push({ type: 'title', text: video.title, video: video });
+                    }
+                });
+
+                const platforms = ['youtube', 'drive', 'vimeo', 'dailymotion', 'facebook', 'instagram', 'tiktok', 'twitter', 'twitch', 'streamable', 'dropbox', 'photos'];
+                platforms.forEach(platform => {
+                    if (platform.includes(queryLower)) {
+                        suggestions.push({ type: 'platform', text: `${platform.charAt(0).toUpperCase() + platform.slice(1)} Videos`, platform: platform });
+                    }
+                });
+
+                const limitedSuggestions = suggestions.slice(0, maxResults);
+                this.suggestionCache.set(cacheKey, limitedSuggestions);
+                return limitedSuggestions;
+            }
+
+            clearSuggestionCache() {
+                this.suggestionCache.clear();
+            }
+        }
+
+        // ==================== APPLICATION INITIALIZATION ====================
+        let videoManager;
+        let videoPlayerController;
+
         function createFloatingParticles() {
             const particlesContainer = document.getElementById('floatingParticles');
             const particleCount = 30;
@@ -3214,7 +3343,6 @@
             for (let i = 0; i < particleCount; i++) {
                 const particle = document.createElement('div');
                 particle.classList.add('particle');
-
                 const size = Math.random() * 120 + 30;
                 const left = Math.random() * 100;
                 const top = Math.random() * 100;
@@ -3227,1014 +3355,233 @@
                 particle.style.top = `${top}%`;
                 particle.style.animationDelay = `${delay}s`;
                 particle.style.animationDuration = `${duration}s`;
-
                 particlesContainer.appendChild(particle);
             }
         }
 
-        // Video Database - Now loaded from Airtable
-        let allVideos = [];
-        let currentVideos = [];
-        let currentVideoIndex = -1; // Start with no video selected
-        let currentPlatform = "all";
-        let currentSearchTerm = '';
-        let currentSortOption = "default";
-        let currentFilters = {
-            platform: 'all',
-            duration: [],
-            status: []
-        };
-        let searchTimeout = null;
-        let recentlyPlayedVideos = JSON.parse(localStorage.getItem('recentlyPlayedVideos') || '[]');
-        let searchStartTime = 0;
-        let airtableService = null;
-
-        // DOM Elements
-        const videoPlayer = document.getElementById('videoPlayer');
-        const videoList = document.getElementById('videoList');
-        const videoCount = document.getElementById('videoCount');
-        const currentVideoTitle = document.getElementById('currentVideoTitle');
-        const currentVideoDescription = document.getElementById('currentVideoDescription');
-        const currentPlatformBadge = document.getElementById('currentPlatformBadge');
-        const prevBtn = document.getElementById('prevBtn');
-        const nextBtn = document.getElementById('nextBtn');
-        const fallbackMessage = document.getElementById('fallbackMessage');
-        const customVideoUrl = document.getElementById('customVideoUrl');
-        const addCustomVideoBtn = document.getElementById('addCustomVideo');
-        const notification = document.getElementById('notification');
-        const notificationText = document.getElementById('notificationText');
-        const videoSearch = document.getElementById('videoSearch');
-        const sortOptions = document.getElementById('sortOptions');
-        const filterOptions = document.getElementById('filterOptions');
-        const searchResultsInfo = document.getElementById('searchResultsInfo');
-        const searchLoading = document.getElementById('searchLoading');
-        const clearSearchBtn = document.getElementById('clearSearchBtn');
-        const clearAllFilters = document.getElementById('clearAllFilters');
-        const searchSuggestions = document.getElementById('searchSuggestions');
-        const activeFilters = document.getElementById('activeFilters');
-        const resultsCount = document.getElementById('resultsCount');
-        const searchTime = document.getElementById('searchTime');
-        const advancedSearchPanel = document.getElementById('advancedSearchPanel');
-
-        // Initialize services
-        let youtubeService = null;
-        let searchService = null;
-
-        // Initialize the application
-        async function init() {
-            createFloatingParticles();
-
-            // Initialize Airtable service with API key
-            airtableService = new AirtableService('patPnJxM2TRWXuka0.087c43bbf8e133080578197ef90fbd4ab5aba7dd7b77194e54fc7a98c5707899');
-            youtubeService = new YouTubeDataService();
-            searchService = new SearchService(airtableService);
-
-            await loadVideosFromAirtable();
-            setupEventListeners();
-            loadRecentlyPlayed();
-            showNotification('Universal Video Player Initialized - All Platforms Supported!', 'success');
-
-            // Don't auto-load first video on initial load
-            // User must explicitly click to play a video
-        }
-
-        // Load recently played videos from localStorage
-        function loadRecentlyPlayed() {
-            try {
-                const stored = localStorage.getItem('recentlyPlayedVideos');
-                if (stored) {
-                    recentlyPlayedVideos = JSON.parse(stored);
-                }
-            } catch (error) {
-                console.error('Error loading recently played videos:', error);
-                recentlyPlayedVideos = [];
-            }
-        }
-
-        // Save video play to recently played
-        function saveToRecentlyPlayed(video) {
-            try {
-                // Remove if already exists
-                recentlyPlayedVideos = recentlyPlayedVideos.filter(v => v.id !== video.id);
-
-                // Add to beginning
-                recentlyPlayedVideos.unshift({
-                    id: video.id,
-                    playedAt: new Date().toISOString(),
-                    playCount: (getRecentlyPlayedData(video.id)?.playCount || 0) + 1
-                });
-
-                // Keep only last 50 videos
-                recentlyPlayedVideos = recentlyPlayedVideos.slice(0, 50);
-
-                // Save to localStorage
-                localStorage.setItem('recentlyPlayedVideos', JSON.stringify(recentlyPlayedVideos));
-            } catch (error) {
-                console.error('Error saving to recently played:', error);
-            }
-        }
-
-        // Get recently played data for a video
-        function getRecentlyPlayedData(videoId) {
-            return recentlyPlayedVideos.find(v => v.id === videoId);
-        }
-
-        // Load videos from Airtable
-        async function loadVideosFromAirtable() {
-            showNotification('Loading videos from cloud storage...', 'info');
-
-            // Show loading state
-            videoList.innerHTML = `
-                <div class="loading">
-                    <div class="spinner"></div>
-                    <p>Loading videos from cloud storage...</p>
-                </div>
-            `;
-
-            try {
-                const videosFromAirtable = await airtableService.getAllVideos();
-                allVideos = videosFromAirtable;
-
-                // Build search index
-                await searchService.buildSearchIndex(allVideos);
-
-                if (allVideos.length > 0) {
-                    showNotification(`Loaded ${allVideos.length} videos from cloud storage`, 'success');
-                } else {
-                    showNotification('No videos found. Add videos using the URL input.', 'warning');
-                }
-
-                await processVideos();
-                // Don't auto-load first video on initial load
-                performSearch('', currentFilters, false);
-
-            } catch (error) {
-                console.error('Error loading videos:', error);
-                allVideos = [];
-                await processVideos();
-                performSearch('', currentFilters, false);
-                showNotification('Failed to load videos: ' + error.message, 'error');
-            }
-        }
-
-        // Process videos (fetch YouTube data, etc.)
-        async function processVideos() {
-            await fetchYouTubeData();
-        }
-
-        // Fetch YouTube video data
-        async function fetchYouTubeData() {
-            const youtubeVideos = allVideos.filter(video =>
-                video.type.includes('youtube') && video.type !== 'youtube_playlist'
-            );
-
-            const promises = youtubeVideos.map(async (video) => {
-                try {
-                    const videoData = await youtubeService.getVideoData(video.videoId);
-                    if (videoData) {
-                        video.title = videoData.title;
-                        video.description = videoData.description;
-                        video.thumbnail = videoData.thumbnail;
-                        video.duration = videoData.duration;
-                    }
-                } catch (error) {
-                    console.error('Error fetching YouTube data for video:', video.videoId, error);
-                }
-            });
-
-            await Promise.allSettled(promises);
-        }
-
-        // Professional Search Functionality
-        async function performSearch(searchTerm, filters = {}, autoLoadVideo = false) {
-            currentSearchTerm = searchTerm;
-            currentFilters = { ...currentFilters, ...filters };
-
-            searchStartTime = performance.now();
-            searchLoading.classList.add('active');
-
-            // Clear previous timeout
-            if (searchTimeout) {
-                clearTimeout(searchTimeout);
-            }
-
-            // Debounce search for better performance
-            searchTimeout = setTimeout(async () => {
-                try {
-                    const searchResults = await airtableService.searchVideos(searchTerm, currentFilters);
-
-                    // Apply sorting
-                    currentVideos = SortingService.sortVideos(searchResults, currentSortOption, recentlyPlayedVideos);
-
-                    updateVideoCount();
-                    generateVideoList();
-                    updateSearchResultsInfo(searchResults.length, performance.now() - searchStartTime);
-                    updateActiveFilters();
-
-                    searchLoading.classList.remove('active');
-
-                    // Never auto-load videos after search/filter operations
-                    // Only update UI to reflect current state
-                    if (currentVideos.length > 0) {
-                        // Try to maintain current video selection if it exists in filtered results
-                        if (currentVideoIndex >= 0 && currentVideoIndex < currentVideos.length) {
-                            // Current video still exists in filtered list
-                            updateActiveVideo();
-                            updateNavigationButtons();
-                        } else {
-                            // Current video no longer in filtered list, reset selection
-                            currentVideoIndex = -1;
-                            updateActiveVideo();
-                            updateNavigationButtons();
-                        }
-                    } else {
-                        showEmptyState();
-                        currentVideoIndex = -1;
-                        updateNavigationButtons();
-                    }
-
-                } catch (error) {
-                    console.error('Error performing search:', error);
-                    searchLoading.classList.remove('active');
-                    showNotification('Search failed: ' + error.message, 'error');
-                }
-            }, CONFIG.SEARCH.DEBOUNCE_DELAY);
-        }
-
-        // Update search results information
-        function updateSearchResultsInfo(resultCount, searchDuration) {
-            const totalCount = allVideos.length;
-            resultsCount.textContent = `${resultCount} of ${totalCount} videos`;
-            searchTime.textContent = `${searchDuration.toFixed(0)}ms`;
-
-            if (currentSearchTerm || currentFilters.platform !== 'all') {
-                searchResultsInfo.style.display = 'flex';
-            } else {
-                searchResultsInfo.style.display = 'none';
-            }
-        }
-
-        // Update active filters display
-        function updateActiveFilters() {
-            activeFilters.innerHTML = '';
-
-            if (currentSearchTerm) {
-                const searchBadge = createFilterBadge(`Search: "${currentSearchTerm}"`, 'search');
-                activeFilters.appendChild(searchBadge);
-            }
-
-            if (currentFilters.platform && currentFilters.platform !== 'all') {
-                const platformBadge = createFilterBadge(`Platform: ${currentFilters.platform}`, 'platform');
-                activeFilters.appendChild(platformBadge);
-            }
-
-            if (currentFilters.duration && currentFilters.duration.length > 0) {
-                currentFilters.duration.forEach(duration => {
-                    const durationBadge = createFilterBadge(`Duration: ${duration}`, 'duration');
-                    activeFilters.appendChild(durationBadge);
-                });
-            }
-
-            if (activeFilters.children.length > 0) {
-                activeFilters.style.display = 'flex';
-            } else {
-                activeFilters.style.display = 'none';
-            }
-        }
-
-        // Create filter badge
-        function createFilterBadge(text, type) {
-            const badge = document.createElement('div');
-            badge.className = 'filter-badge';
-            badge.innerHTML = `
-                ${text}
-                <span class="remove" onclick="removeFilter('${type}')">
-                    <i class="fas fa-times"></i>
-                </span>
-            `;
-            return badge;
-        }
-
-        // Remove specific filter
-        function removeFilter(type) {
-            if (type === 'search') {
-                videoSearch.value = '';
-                currentSearchTerm = '';
-            } else if (type === 'platform') {
-                filterOptions.value = 'all';
-                currentFilters.platform = 'all';
-            } else if (type === 'duration') {
-                currentFilters.duration = [];
-            }
-
-            performSearch(currentSearchTerm, currentFilters, false);
-        }
-
-        // Show search suggestions
-        function showSearchSuggestions(query) {
-            if (query.length < CONFIG.SEARCH.MIN_SEARCH_LENGTH) {
-                searchSuggestions.classList.remove('active');
-                return;
-            }
-
-            const suggestions = searchService.getSuggestions(query, allVideos);
-            searchSuggestions.innerHTML = '';
-
-            if (suggestions.length === 0) {
-                searchSuggestions.classList.remove('active');
-                return;
-            }
-
-            suggestions.forEach((suggestion, index) => {
-                const suggestionItem = document.createElement('div');
-                suggestionItem.className = 'suggestion-item';
-                suggestionItem.innerHTML = `
-                    <i class="fas fa-${suggestion.type === 'title' ? 'video' : 'folder'}"></i>
-                    <span>${suggestion.text}</span>
-                `;
-
-                suggestionItem.addEventListener('click', () => {
-                    if (suggestion.type === 'title') {
-                        videoSearch.value = suggestion.text;
-                        performSearch(suggestion.text, currentFilters);
-                    } else if (suggestion.type === 'platform') {
-                        filterOptions.value = suggestion.platform;
-                        currentFilters.platform = suggestion.platform;
-                        performSearch(currentSearchTerm, currentFilters);
-                    }
-                    searchSuggestions.classList.remove('active');
-                });
-
-                searchSuggestions.appendChild(suggestionItem);
-            });
-
-            searchSuggestions.classList.add('active');
-        }
-
-        // Apply sorting
-        function applySorting(sortOption) {
-            currentSortOption = sortOption;
-            currentVideos = SortingService.sortVideos(currentVideos, sortOption, recentlyPlayedVideos);
-            generateVideoList();
-
-            // Don't auto-load when sorting, just update the display
-            if (currentVideos.length > 0) {
-                // Try to maintain current selection
-                if (currentVideoIndex >= 0 && currentVideoIndex < currentVideos.length) {
-                    updateActiveVideo();
-                } else {
-                    currentVideoIndex = -1;
-                    updateActiveVideo();
-                }
-                updateNavigationButtons();
-            }
-        }
-
-        // Apply platform filter
-        function applyPlatformFilter(platform) {
-            currentFilters.platform = platform;
-            // Never auto-load when changing platform filters
-            performSearch(currentSearchTerm, currentFilters, false);
-        }
-
-        // Load a specific video
-        function loadVideo(index) {
-            if (index >= 0 && index < currentVideos.length) {
-                currentVideoIndex = index;
-                const video = currentVideos[index];
-
-                // Save to recently played
-                saveToRecentlyPlayed(video);
-
-                fallbackMessage.style.display = 'none';
-
-                let embedUrl = video.url || "";
-                let badgeClass = "";
-                let badgeText = "";
-
-                // Generate embed URLs based on video type
-                switch (video.type) {
-                    case "youtube":
-                        embedUrl = video.url; // Use the stored URL which has the proper embed format
-                        badgeClass = "badge-youtube";
-                        badgeText = "YouTube";
-                        break;
-                    case "youtube_playlist":
-                        embedUrl = video.url;
-                        badgeClass = "badge-youtube";
-                        badgeText = "YouTube Playlist";
-                        break;
-                    case "drive":
-                        embedUrl = video.url;
-                        badgeClass = "badge-drive";
-                        badgeText = "Google Drive";
-                        break;
-                    case "vimeo":
-                        embedUrl = video.url;
-                        badgeClass = "badge-vimeo";
-                        badgeText = "Vimeo";
-                        break;
-                    case "dailymotion":
-                        embedUrl = video.url;
-                        badgeClass = "badge-dailymotion";
-                        badgeText = "Dailymotion";
-                        break;
-                    case "facebook":
-                        embedUrl = video.url;
-                        badgeClass = "badge-facebook";
-                        badgeText = "Facebook";
-                        break;
-                    case "instagram":
-                        embedUrl = video.url;
-                        badgeClass = "badge-instagram";
-                        badgeText = "Instagram";
-                        break;
-                    case "tiktok":
-                        embedUrl = video.url;
-                        badgeClass = "badge-tiktok";
-                        badgeText = "TikTok";
-                        break;
-                    case "twitter":
-                        embedUrl = video.url;
-                        badgeClass = "badge-twitter";
-                        badgeText = "Twitter/X";
-                        break;
-                    case "twitch":
-                        embedUrl = video.url;
-                        badgeClass = "badge-twitch";
-                        badgeText = "Twitch";
-                        break;
-                    case "streamable":
-                        embedUrl = video.url;
-                        badgeClass = "badge-streamable";
-                        badgeText = "Streamable";
-                        break;
-                    case "dropbox":
-                        embedUrl = video.url;
-                        badgeClass = "badge-dropbox";
-                        badgeText = "Dropbox";
-                        break;
-                    case "photos":
-                        embedUrl = video.url;
-                        badgeClass = "badge-photos";
-                        badgeText = "Google Photos";
-                        break;
-                    case "direct":
-                    default:
-                        embedUrl = video.url;
-                        badgeClass = "badge-other";
-                        badgeText = video.type.charAt(0).toUpperCase() + video.type.slice(1);
-                        break;
-                }
-
-                // Set up a loading timeout for all video types
-                let loadingTimeout = setTimeout(() => {
-                    // If video hasn't loaded after 10 seconds, show fallback
-                    showFallbackMessage();
-                }, 10000);
-
-                // Clear the timeout when video loads successfully
-                videoPlayer.onload = () => {
-                    clearTimeout(loadingTimeout);
-                };
-
-                videoPlayer.onerror = () => {
-                    clearTimeout(loadingTimeout);
-                    // Try fallback URLs for YouTube
-                    if (video.type === 'youtube' && video.fallbackUrls && video.fallbackUrls.length > 0) {
-                        const nextUrl = video.fallbackUrls.shift();
-                        if (nextUrl) {
-                            console.log('Trying fallback URL:', nextUrl);
-                            videoPlayer.src = nextUrl;
-                        } else {
-                            showFallbackMessage();
-                        }
-                    } else {
-                        showFallbackMessage();
-                    }
-                };
-
-                videoPlayer.src = embedUrl;
-                currentVideoTitle.textContent = video.title;
-                currentVideoDescription.textContent = video.description;
-
-                currentPlatformBadge.className = `platform-badge ${badgeClass}`;
-                currentPlatformBadge.textContent = badgeText;
-
-                setupFallbackOptions(video);
-
-                updateActiveVideo();
-                updateNavigationButtons();
-
-                if (video.type === "drive") {
-                    setTimeout(checkPreviewAvailability, 3000);
-                }
-
-                console.log(`Playing: ${video.title} (${video.type})`);
-            }
-        }
-
-        // Add custom video from URL
-        async function addCustomVideo() {
-            const url = customVideoUrl.value.trim();
-
-            if (!url) {
-                showNotification('Please enter a video URL', 'warning');
-                return;
-            }
-
-            // Disable button during processing
-            const originalButtonText = addCustomVideoBtn.innerHTML;
-            addCustomVideoBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Adding...';
-            addCustomVideoBtn.disabled = true;
-
-            try {
-                // Parse URL using the enhanced VideoURLParser
-                const parsed = VideoURLParser.parseURL(url);
-                if (!parsed) {
-                    throw new Error('Unsupported video URL format');
-                }
-
-                let videoData = {
-                    id: parsed.videoId,
-                    title: parsed.title,
-                    description: parsed.description,
-                    type: parsed.type,
-                    duration: '--:--',
-                    url: parsed.embedUrl,
-                    thumbnail: parsed.thumbnail,
-                    fallbackUrls: parsed.fallbackUrls || []
-                };
-
-                // Fetch additional data for YouTube videos
-                if (parsed.type === 'youtube' && !parsed.type.includes('playlist')) {
-                    const youtubeData = await youtubeService.getVideoData(parsed.videoId);
-                    if (youtubeData) {
-                        videoData.title = youtubeData.title;
-                        videoData.description = youtubeData.description;
-                        videoData.thumbnail = youtubeData.thumbnail;
-                        videoData.duration = youtubeData.duration;
-                    }
-                }
-
-                console.log('Adding custom video:', videoData);
-
-                // Save to Airtable and get the created video
-                const createdVideo = await airtableService.addVideo(videoData);
-
-                // Add the new video to local arrays and rebuild search index
-                allVideos.push(createdVideo);
-                await searchService.buildSearchIndex(allVideos);
-
-                // Refresh current view
-                performSearch(currentSearchTerm, currentFilters);
-
-                customVideoUrl.value = '';
-                showNotification('Video added successfully to playlist!', 'success');
-
-            } catch (error) {
-                console.error('Error adding video:', error);
-                showNotification('Failed to add video: ' + error.message, 'error');
-            } finally {
-                // Re-enable button
-                addCustomVideoBtn.innerHTML = originalButtonText;
-                addCustomVideoBtn.disabled = false;
-            }
-        }
-
-        // Update active video in list
-        function updateActiveVideo() {
-            document.querySelectorAll('.video-item').forEach((item, i) => {
-                const video = currentVideos[i];
-                if (video) {
-                    item.classList.toggle('active', i === currentVideoIndex);
-                    item.className = `video-item ${video.type} ${i === currentVideoIndex ? 'active' : ''}`;
-                }
-            });
-        }
-
-        // Update navigation buttons
-        function updateNavigationButtons() {
-            const hasVideos = currentVideos.length > 0;
-            const hasSelection = currentVideoIndex >= 0 && currentVideoIndex < currentVideos.length;
-            
-            prevBtn.disabled = !hasVideos || !hasSelection || currentVideoIndex === 0;
-            nextBtn.disabled = !hasVideos || !hasSelection || currentVideoIndex === currentVideos.length - 1;
-        }
-
-        // Update video count display
-        function updateVideoCount() {
-            const count = currentVideos.length;
-            videoCount.textContent = `${count} video${count !== 1 ? 's' : ''}`;
-        }
-
-        // Generate video list
-        function generateVideoList() {
-            videoList.innerHTML = '';
-
-            if (currentVideos.length === 0) {
-                showEmptyState();
-                return;
-            }
-
-            currentVideos.forEach((video, index) => {
-                const videoItem = document.createElement('div');
-                videoItem.className = `video-item ${video.type} ${index === currentVideoIndex ? 'active' : ''}`;
-
-                // Add highlighted class if this video matches search
-                if (currentSearchTerm &&
-                    (video.title.toLowerCase().includes(currentSearchTerm.toLowerCase()) ||
-                        video.description.toLowerCase().includes(currentSearchTerm.toLowerCase()))) {
-                    videoItem.classList.add('highlighted');
-                }
-
-                let thumbUrl = video.thumbnail;
-                if (!thumbUrl) {
-                    if (video.type.includes('youtube')) {
-                        if (video.type === 'youtube_playlist') {
-                            thumbUrl = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjcwIiB2aWV3Qm94PSIwIDAgMTAwIDcwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iNzAiIGZpbGw9IiNmMTBhMGIiLz48dGV4dCB4PSI1MCIgeT0iMzUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxMCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPllvdVR1YmUgUGxheWxpc3Q8L3RleHQ+PC9zdmc+';
-                        } else {
-                            thumbUrl = `https://img.youtube.com/vi/${video.videoId}/hqdefault.jpg`;
-                        }
-                    } else if (video.type === 'drive') {
-                        thumbUrl = `https://drive.google.com/thumbnail?id=${video.videoId}&sz=w400`;
-                    } else {
-                        thumbUrl = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjcwIiB2aWV3Qm94PSIwIDAgMTAwIDcwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iNzAiIGZpbGw9IiMzMzMiLz48cGF0aCBkPSJNMzUgMzBMNTAgNDVINjVMMzUiIHN0cm9rZT0iIzk5OSIgc3Ryb2tlLXdpZHRoPSIyIi8+PC9zdmc+';
-                    }
-                }
-
-                videoItem.innerHTML = `
-                    <img class="video-thumb" src="${thumbUrl}" alt="${video.title}" 
-                         onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjcwIiB2aWV3Qm94PSIwIDAgMTAwIDcwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iNzAiIGZpbGw9IiMzMzMiLz48cGF0aCBkPSJNMzUgMzBMNTAgNDVINjVMMzUiIHN0cm9rZT0iIzk5OSIgc3Ryb2tlLXdpZHRoPSIyIi8+PC9zdmc+'">
-                    <div class="video-item-info">
-                        <div class="video-item-title">${highlightSearchTerms(video.title, currentSearchTerm)}</div>
-                        <div class="video-item-meta">
-                            <span class="video-duration">${video.duration}</span>
-                            <span>${video.type.charAt(0).toUpperCase() + video.type.slice(1)}</span>
-                            ${getRecentlyPlayedBadge(video.id)}
-                            ${getPopularityBadge(video)}
-                            ${index === currentVideoIndex ? '<span class="currently-playing-badge"><i class="fas fa-play"></i> Playing</span>' : ''}
-                        </div>
-                    </div>
-                `;
-
-                videoItem.addEventListener('click', () => {
-                    loadVideo(index);
-                    showNotification(`Now playing: ${video.title}`, 'success');
-                });
-
-                videoList.appendChild(videoItem);
-            });
-        }
-
-        // Helper function to highlight search terms in titles
-        function highlightSearchTerms(text, searchTerm) {
-            if (!searchTerm || !text) return text;
-
-            const regex = new RegExp(`(${searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-            return text.replace(regex, '<mark class="search-highlight">$1</mark>');
-        }
-
-        // Helper function to show recently played badge
-        function getRecentlyPlayedBadge(videoId) {
-            const played = getRecentlyPlayedData(videoId);
-            if (played) {
-                return `<span class="recent-badge" title="Played ${new Date(played.playedAt).toLocaleDateString()}"><i class="fas fa-history"></i></span>`;
-            }
-            return '';
-        }
-
-        // Helper function to show popularity badge
-        function getPopularityBadge(video) {
-            const playedData = getRecentlyPlayedData(video.id);
-            const playCount = playedData?.playCount || 0;
-            const viewCount = video.viewCount || 0;
-            const totalEngagement = playCount + viewCount;
-
-            if (totalEngagement > 10) {
-                return `<span class="popularity-badge" title="Popular video"><i class="fas fa-fire"></i></span>`;
-            }
-            return '';
-        }
-
-        // Show empty state
-        function showEmptyState() {
-            let message = 'No videos available';
-            let description = 'Try adjusting your search or filters';
-
-            if (currentSearchTerm) {
-                message = 'No videos found';
-                description = `No results for "${currentSearchTerm}"`;
-            } else if (currentFilters.platform !== 'all') {
-                message = `No ${currentFilters.platform} videos`;
-                description = 'Try a different platform filter';
-            }
-
-            videoList.innerHTML = `
-                <div class="empty-state">
-                    <i class="fas fa-search"></i>
-                    <h3>${message}</h3>
-                    <p>${description}</p>
-                </div>
-            `;
-        }
-
-        // Clear all filters and search
-        function clearAllFiltersAndSearch() {
-            videoSearch.value = '';
-            currentSearchTerm = '';
-            filterOptions.value = 'all';
-            currentFilters.platform = 'all';
-            currentFilters.duration = [];
-            sortOptions.value = 'default';
-            currentSortOption = 'default';
-
-            performSearch('', currentFilters, false);
-        }
-
-        // Check if preview is available (for Google Drive)
-        function checkPreviewAvailability() {
-            const iframe = videoPlayer;
-            let retryCount = 0;
-            const maxRetries = 3;
-            let useAlternateUrl = false;
-
-            function checkIframe() {
-                try {
-                    // Try to access the iframe content
-                    if (iframe.contentDocument && iframe.contentDocument.body) {
-                        const bodyText = iframe.contentDocument.body.innerText || '';
-                        if (bodyText.includes('preview') && bodyText.includes('not available')) {
-                            handlePreviewFailure();
-                        }
-                    } else {
-                        // If we can't access the iframe content due to CORS, check iframe size
-                        const computedStyle = window.getComputedStyle(iframe);
-                        const height = parseInt(computedStyle.height);
-
-                        if (height < 50 || computedStyle.visibility === 'hidden' || computedStyle.display === 'none') {
-                            handlePreviewFailure();
-                        }
-                    }
-                } catch (e) {
-                    console.log("Cannot check iframe content due to CORS policy, using size detection");
-                    // Set up a delayed check
-                    setTimeout(() => handlePreviewFailure(), 5000);
-                }
-            }
-
-            function handlePreviewFailure() {
-                const currentVideo = currentVideos[currentVideoIndex];
-
-                if (!useAlternateUrl && currentVideo.alternateUrl && retryCount < maxRetries) {
-                    // Try alternate URL format
-                    console.log('Retrying with alternate URL format...');
-                    useAlternateUrl = true;
-                    iframe.src = currentVideo.alternateUrl;
-                    retryCount++;
-
-                    // Check again after a delay
-                    setTimeout(checkIframe, 3000);
-                } else if (retryCount < maxRetries) {
-                    // Try refreshing the preview URL
-                    console.log('Retrying preview URL...');
-                    iframe.src = iframe.src + '&t=' + new Date().getTime();
-                    retryCount++;
-
-                    // Check again after a delay
-                    setTimeout(checkIframe, 3000);
-                } else {
-                    console.log('All retries failed, showing fallback options');
-                    showFallbackMessage();
-                }
-            }
-
-            // Start checking
-            setTimeout(checkIframe, 3000);
-        }
-
-        // Show fallback message
-        function showFallbackMessage() {
-            fallbackMessage.style.display = 'flex';
-        }
-
-        // Setup fallback options
-        function setupFallbackOptions(video) {
-            // Open in original site
-            document.getElementById('openOriginal').onclick = () => {
-                let url;
-                switch (video.type) {
-                    case 'drive':
-                        url = `https://drive.google.com/file/d/${video.videoId}/view?usp=sharing`;
-                        break;
-                    case 'youtube_playlist':
-                        url = `https://www.youtube.com/playlist?list=${video.videoId}`;
-                        break;
-                    case 'youtube':
-                        url = `https://www.youtube.com/watch?v=${video.videoId}`;
-                        break;
-                    default:
-                        url = video.url;
-                }
-
-                window.open(url, '_blank');
-                showNotification('Opening original video...', 'success');
-            };
-
-            // Download video
-            document.getElementById('downloadVideo').onclick = () => {
-                let url;
-                if (video.type === 'drive') {
-                    // Try direct download URL first
-                    url = `https://drive.google.com/uc?export=download&id=${video.videoId}`;
-                    // If alternate URL is available and regular preview failed, use it
-                    if (video.alternateUrl && fallbackMessage.style.display === 'flex') {
-                        url = video.alternateUrl;
-                    }
-                } else {
-                    url = video.url;
-                }
-
-                window.open(url, '_blank');
-                showNotification('Starting download...', 'success');
-            };
-        }
-
-        // Professional notification system
-        function showNotification(message, type = 'success') {
-            notificationText.textContent = message;
-            notification.className = `notification ${type} show`;
-
-            setTimeout(() => {
-                notification.classList.remove('show');
-            }, 4000);
-        }
-
-        // Setup event listeners
         function setupEventListeners() {
-            // Navigation controls
-            prevBtn.addEventListener('click', () => {
-                if (currentVideoIndex > 0) {
-                    loadVideo(currentVideoIndex - 1);
-                }
+            const videoSearch = document.getElementById('videoSearch');
+            const sortOptions = document.getElementById('sortOptions');
+            const filterOptions = document.getElementById('filterOptions');
+            const clearSearchBtn = document.getElementById('clearSearchBtn');
+            const clearAllFilters = document.getElementById('clearAllFilters');
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            const addCustomVideoBtn = document.getElementById('addCustomVideo');
+            const customVideoUrl = document.getElementById('customVideoUrl');
+            const platformTabs = document.querySelectorAll('.platform-tab');
+            const videoList = document.getElementById('videoList');
+
+            // Search with debouncing
+            let searchTimeout;
+            videoSearch.addEventListener('input', (e) => {
+                clearTimeout(searchTimeout);
+                const query = e.target.value;
+                searchTimeout = setTimeout(() => {
+                    videoManager.currentSearchTerm = query;
+                    videoManager.applyFiltersAndSearch();
+                    videoManager.showNotification(`Searching for "${query}"`, 'info');
+                }, CONFIG.SEARCH.DEBOUNCE_DELAY);
             });
 
-            nextBtn.addEventListener('click', () => {
-                if (currentVideoIndex < currentVideos.length - 1) {
-                    loadVideo(currentVideoIndex + 1);
-                }
+            // Sort and filter changes
+            sortOptions.addEventListener('change', (e) => {
+                videoManager.currentSortOption = e.target.value;
+                videoManager.applyFiltersAndSearch();
+                videoManager.showNotification(`Sorted by: ${e.target.options[e.target.selectedIndex].text}`, 'success');
             });
 
-            // Custom video addition
-            addCustomVideoBtn.addEventListener('click', addCustomVideo);
+            filterOptions.addEventListener('change', (e) => {
+                videoManager.currentFilters.platform = e.target.value;
+                videoManager.currentPlatform = e.target.value;
+                videoManager.applyFiltersAndSearch();
+                videoManager.showNotification(`Filtered by: ${e.target.value}`, 'success');
+            });
 
             // Platform tabs
-            document.querySelectorAll('.platform-tab').forEach(tab => {
+            platformTabs.forEach(tab => {
                 tab.addEventListener('click', () => {
                     document.querySelectorAll('.platform-tab').forEach(t => t.classList.remove('active'));
                     tab.classList.add('active');
                     const platform = tab.dataset.platform;
-                    
-                    // Store current video before filtering to maintain selection
-                    const currentVideoBeforeFilter = currentVideoIndex >= 0 ? currentVideos[currentVideoIndex] : null;
-                    
-                    applyPlatformFilter(platform);
-                    
-                    // Try to maintain the current video after platform change
-                    if (currentVideoBeforeFilter) {
-                        setTimeout(() => {
-                            const newIndex = currentVideos.findIndex(video => video.id === currentVideoBeforeFilter.id);
-                            if (newIndex !== -1) {
-                                currentVideoIndex = newIndex;
-                                updateActiveVideo();
-                                updateNavigationButtons();
-                            }
-                        }, 100);
-                    }
 
-                    showNotification(`Showing ${platform} videos`, 'success');
+                    videoManager.currentPlatform = platform;
+                    videoManager.currentFilters.platform = platform;
+                    filterOptions.value = platform;
+
+                    videoManager.applyFiltersAndSearch();
+                    videoManager.showNotification(`Showing ${platform} videos`, 'success');
                 });
             });
 
-            // Enter key for custom URL
-            customVideoUrl.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    addCustomVideo();
-                }
-            });
-
-            // Professional search functionality
-            videoSearch.addEventListener('input', (e) => {
-                const query = e.target.value;
-                showSearchSuggestions(query);
-                // Never auto-load when searching
-                performSearch(query, currentFilters, false);
-            });
-
-            videoSearch.addEventListener('focus', () => {
-                if (videoSearch.value.length >= CONFIG.SEARCH.MIN_SEARCH_LENGTH) {
-                    showSearchSuggestions(videoSearch.value);
-                }
-            });
-
-            document.addEventListener('click', (e) => {
-                if (!e.target.closest('.search-box')) {
-                    searchSuggestions.classList.remove('active');
-                }
-            });
-
-            // Clear search button
+            // Clear actions
             clearSearchBtn.addEventListener('click', () => {
                 videoSearch.value = '';
-                currentSearchTerm = '';
-                // Don't auto-load when clearing search
-                performSearch('', currentFilters, false);
-                searchSuggestions.classList.remove('active');
-                showNotification('Search cleared', 'info');
+                videoManager.currentSearchTerm = '';
+                videoManager.applyFiltersAndSearch();
+                videoManager.showNotification('Search cleared', 'info');
             });
 
-            // Sort functionality
-            sortOptions.addEventListener('change', (e) => {
-                applySorting(e.target.value);
-                showNotification(`Sorted by: ${e.target.options[e.target.selectedIndex].text}`, 'success');
+            clearAllFilters.addEventListener('click', () => {
+                videoSearch.value = '';
+                videoManager.currentSearchTerm = '';
+                filterOptions.value = 'all';
+                videoManager.currentFilters.platform = 'all';
+                videoManager.currentPlatform = 'all';
+                sortOptions.value = 'default';
+                videoManager.currentSortOption = 'default';
+
+                document.querySelectorAll('.platform-tab').forEach(t => t.classList.remove('active'));
+                document.querySelector('.platform-tab[data-platform="all"]').classList.add('active');
+
+                videoManager.applyFiltersAndSearch();
+                videoManager.showNotification('All filters cleared', 'success');
             });
 
-            // Filter functionality
-            filterOptions.addEventListener('change', (e) => {
-                applyPlatformFilter(e.target.value);
+            // Navigation
+            prevBtn.addEventListener('click', () => {
+                const video = videoManager.prevVideo();
+                if (video) {
+                    videoPlayerController.loadVideo(video);
+                    videoManager.showNotification(`Now playing: ${video.title}`, 'success');
+                }
             });
 
-            // Clear all filters
-            clearAllFilters.addEventListener('click', clearAllFiltersAndSearch);
+            nextBtn.addEventListener('click', () => {
+                const video = videoManager.nextVideo();
+                if (video) {
+                    videoPlayerController.loadVideo(video);
+                    videoManager.showNotification(`Now playing: ${video.title}`, 'success');
+                }
+            });
+
+            // Add custom video
+            addCustomVideoBtn.addEventListener('click', async () => {
+                const url = customVideoUrl.value.trim();
+                if (!url) {
+                    videoManager.showNotification('Please enter a video URL', 'warning');
+                    return;
+                }
+
+                const originalButtonText = addCustomVideoBtn.innerHTML;
+                addCustomVideoBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Adding...';
+                addCustomVideoBtn.disabled = true;
+
+                try {
+                    const video = await videoManager.addCustomVideo(url);
+                    if (video) {
+                        customVideoUrl.value = '';
+                        // Optionally load the new video
+                        videoPlayerController.loadVideo(video);
+                    }
+                } finally {
+                    addCustomVideoBtn.innerHTML = originalButtonText;
+                    addCustomVideoBtn.disabled = false;
+                }
+            });
+
+            customVideoUrl.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    addCustomVideoBtn.click();
+                }
+            });
+
+            // Video list click delegation
+            videoList.addEventListener('click', (e) => {
+                const videoItem = e.target.closest('.video-item');
+                if (videoItem) {
+                    const videoId = videoItem.dataset.videoId;
+                    const video = videoManager.filteredVideos.find(v => v.id === videoId);
+                    if (video) {
+                        videoPlayerController.loadVideo(video);
+                        videoManager.showNotification(`Now playing: ${video.title}`, 'success');
+                    }
+                }
+            });
 
             // Keyboard shortcuts
             document.addEventListener('keydown', (e) => {
-                // Ctrl/Cmd + F for search
                 if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
                     e.preventDefault();
                     videoSearch.focus();
                     videoSearch.select();
                 }
 
-                // Escape to clear search and close suggestions
                 if (e.key === 'Escape') {
                     if (videoSearch.value) {
                         videoSearch.value = '';
-                        performSearch('', currentFilters);
+                        videoManager.currentSearchTerm = '';
+                        videoManager.applyFiltersAndSearch();
                     }
-                    searchSuggestions.classList.remove('active');
                 }
 
-                // Arrow keys for navigation
-                if (e.key === 'ArrowLeft' && currentVideoIndex > 0) {
-                    loadVideo(currentVideoIndex - 1);
-                }
-                else if (e.key === 'ArrowRight' && currentVideoIndex < currentVideos.length - 1) {
-                    loadVideo(currentVideoIndex + 1);
-                }
-                else if (e.key === ' ' && videoPlayer.tagName === 'VIDEO') {
+                if (e.key === 'ArrowLeft' && !prevBtn.disabled) {
+                    prevBtn.click();
+                } else if (e.key === 'ArrowRight' && !nextBtn.disabled) {
+                    nextBtn.click();
+                } else if (e.key === ' ' && document.querySelector('.video-container video')) {
                     e.preventDefault();
-                    if (videoPlayer.paused) {
-                        videoPlayer.play();
+                    const videoElement = document.querySelector('.video-container video');
+                    if (videoElement.paused) {
+                        videoElement.play();
                     } else {
-                        videoPlayer.pause();
+                        videoElement.pause();
                     }
                 }
             });
+        }
 
-            // Video player events
-            videoPlayer.addEventListener('load', () => {
-                console.log('Video player loaded successfully');
-            });
+        async function init() {
+            createFloatingParticles();
 
-            videoPlayer.addEventListener('error', () => {
-                console.error('Error loading video');
-                showNotification('Error loading video. Please try another.', 'error');
-            });
+            videoManager = new EnhancedVideoManager();
+            videoPlayerController = new EnhancedVideoPlayer(videoManager);
+
+            setupEventListeners();
+
+            await videoManager.loadVideos();
+
+            // Load the first video if one exists and none is currently selected
+            if (videoManager.filteredVideos.length > 0 && !videoManager.currentVideoId) {
+                const firstVideo = videoManager.filteredVideos[0];
+                videoPlayerController.loadVideo(firstVideo);
+            }
+
+            videoManager.showNotification('Universal Video Player Initialized - All Platforms Supported!', 'success');
         }
 
         // Initialize when page loads
         window.addEventListener('load', init);
 
         // Global functions for HTML onclick handlers
-        window.removeFilter = removeFilter;
-        window.clearAllFiltersAndSearch = clearAllFiltersAndSearch;
+        window.removeFilter = function (type) {
+            if (type === 'search') {
+                document.getElementById('videoSearch').value = '';
+                videoManager.currentSearchTerm = '';
+            } else if (type === 'platform') {
+                document.getElementById('filterOptions').value = 'all';
+                videoManager.currentFilters.platform = 'all';
+                videoManager.currentPlatform = 'all';
+            }
+            videoManager.applyFiltersAndSearch();
+        };
+
+        window.clearAllFiltersAndSearch = function () {
+            document.getElementById('clearAllFilters').click();
+        };
 
         // API Key Configuration
-        function setAirtableApiKey(apiKey) {
+        window.setAirtableApiKey = function (apiKey) {
             if (apiKey && apiKey.startsWith('pat')) {
-                airtableService = new AirtableService(apiKey);
-                searchService = new SearchService(airtableService);
-                showNotification('Airtable API key configured successfully', 'success');
+                videoManager.services.airtable = new AirtableService(apiKey);
+                videoManager.searchService = new SearchService(videoManager.services.airtable);
+                videoManager.showNotification('Airtable API key configured successfully', 'success');
                 return true;
             } else {
-                showNotification('Invalid Airtable API key format', 'error');
+                videoManager.showNotification('Invalid Airtable API key format', 'error');
                 return false;
             }
-        }
-
-        // Expose the setAirtableApiKey function globally
-        window.setAirtableApiKey = setAirtableApiKey;
+        };
     </script>
 </body>
 
