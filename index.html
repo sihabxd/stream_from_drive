@@ -17,6 +17,14 @@
             --drive: #2563eb;
             --vimeo: #19d4f3;
             --dailymotion: #0052cc;
+            --facebook: #3b5998;
+            --instagram: #e1306c;
+            --tiktok: #000000;
+            --twitter: #1da1f2;
+            --twitch: #6441a5;
+            --streamable: #0f9d58;
+            --dropbox: #0061ff;
+            --photos: #34a853;
             --success: #22c55e;
             --warning: #f59e0b;
             --error: #dc2626;
@@ -394,6 +402,41 @@
             border-color: rgba(37, 99, 235, 0.5);
         }
 
+        .platform-tab.vimeo.active {
+            background: linear-gradient(135deg, rgba(25, 212, 243, 0.2), rgba(0, 119, 182, 0.2));
+            border-color: rgba(25, 212, 243, 0.5);
+        }
+
+        .platform-tab.dailymotion.active {
+            background: linear-gradient(135deg, rgba(0, 82, 204, 0.2), rgba(0, 53, 128, 0.2));
+            border-color: rgba(0, 82, 204, 0.5);
+        }
+
+        .platform-tab.facebook.active {
+            background: linear-gradient(135deg, rgba(59, 89, 152, 0.2), rgba(44, 67, 114, 0.2));
+            border-color: rgba(59, 89, 152, 0.5);
+        }
+
+        .platform-tab.instagram.active {
+            background: linear-gradient(135deg, rgba(225, 48, 108, 0.2), rgba(193, 53, 132, 0.2));
+            border-color: rgba(225, 48, 108, 0.5);
+        }
+
+        .platform-tab.tiktok.active {
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0.2), rgba(37, 244, 238, 0.2));
+            border-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .platform-tab.twitter.active {
+            background: linear-gradient(135deg, rgba(29, 161, 242, 0.2), rgba(23, 124, 186, 0.2));
+            border-color: rgba(29, 161, 242, 0.5);
+        }
+
+        .platform-tab.twitch.active {
+            background: linear-gradient(135deg, rgba(100, 65, 165, 0.2), rgba(76, 49, 125, 0.2));
+            border-color: rgba(100, 65, 165, 0.5);
+        }
+
         .platform-tab.other.active {
             background: linear-gradient(135deg, rgba(167, 139, 250, 0.2), rgba(107, 70, 193, 0.2));
             border-color: rgba(167, 139, 250, 0.5);
@@ -527,6 +570,46 @@
 
         .badge-drive {
             background: linear-gradient(135deg, var(--drive), #1e3a8a);
+        }
+
+        .badge-vimeo {
+            background: linear-gradient(135deg, var(--vimeo), #0a7b9e);
+        }
+
+        .badge-dailymotion {
+            background: linear-gradient(135deg, var(--dailymotion), #003399);
+        }
+
+        .badge-facebook {
+            background: linear-gradient(135deg, var(--facebook), #2d4373);
+        }
+
+        .badge-instagram {
+            background: linear-gradient(135deg, var(--instagram), #c13584);
+        }
+
+        .badge-tiktok {
+            background: linear-gradient(135deg, var(--tiktok), #69c9d0);
+        }
+
+        .badge-twitter {
+            background: linear-gradient(135deg, var(--twitter), #1a91da);
+        }
+
+        .badge-twitch {
+            background: linear-gradient(135deg, var(--twitch), #4b367c);
+        }
+
+        .badge-streamable {
+            background: linear-gradient(135deg, var(--streamable), #0a7b43);
+        }
+
+        .badge-dropbox {
+            background: linear-gradient(135deg, var(--dropbox), #0047b3);
+        }
+
+        .badge-photos {
+            background: linear-gradient(135deg, var(--photos), #2e8b57);
         }
 
         .badge-other {
@@ -1665,6 +1748,27 @@
                 <div class="platform-tab drive" data-platform="drive">
                     <i class="fab fa-google-drive"></i> Google Drive
                 </div>
+                <div class="platform-tab vimeo" data-platform="vimeo">
+                    <i class="fab fa-vimeo"></i> Vimeo
+                </div>
+                <div class="platform-tab dailymotion" data-platform="dailymotion">
+                    <i class="fab fa-dailymotion"></i> Dailymotion
+                </div>
+                <div class="platform-tab facebook" data-platform="facebook">
+                    <i class="fab fa-facebook"></i> Facebook
+                </div>
+                <div class="platform-tab instagram" data-platform="instagram">
+                    <i class="fab fa-instagram"></i> Instagram
+                </div>
+                <div class="platform-tab tiktok" data-platform="tiktok">
+                    <i class="fab fa-tiktok"></i> TikTok
+                </div>
+                <div class="platform-tab twitter" data-platform="twitter">
+                    <i class="fab fa-twitter"></i> Twitter/X
+                </div>
+                <div class="platform-tab twitch" data-platform="twitch">
+                    <i class="fab fa-twitch"></i> Twitch
+                </div>
                 <div class="platform-tab other" data-platform="other">
                     <i class="fas fa-film"></i> Other Videos
                 </div>
@@ -1674,7 +1778,7 @@
         <div class="main-content">
             <div class="player-section slide-in-left">
                 <div class="video-container">
-                    <iframe id="videoPlayer" src="" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+                    <iframe id="videoPlayer" src="" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe>
                     <div class="fallback-message" id="fallbackMessage">
                         <h3><i class="fas fa-exclamation-triangle"></i> Preview Not Available</h3>
                         <p>This video cannot be previewed directly. Try one of these options:</p>
@@ -1712,9 +1816,17 @@
                         <span>Supported platforms:</span>
                         <span class="platform-tag">YouTube</span>
                         <span class="platform-tag">Google Drive</span>
-                        <span class="platform-tag">MP4/WebM</span>
                         <span class="platform-tag">Vimeo</span>
                         <span class="platform-tag">Dailymotion</span>
+                        <span class="platform-tag">Facebook</span>
+                        <span class="platform-tag">Instagram</span>
+                        <span class="platform-tag">TikTok</span>
+                        <span class="platform-tag">Twitter/X</span>
+                        <span class="platform-tag">Twitch</span>
+                        <span class="platform-tag">Streamable</span>
+                        <span class="platform-tag">Dropbox</span>
+                        <span class="platform-tag">Google Photos</span>
+                        <span class="platform-tag">MP4/WebM</span>
                     </div>
                 </div>
             </div>
@@ -1776,7 +1888,16 @@
                                 <option value="drive">Google Drive</option>
                                 <option value="vimeo">Vimeo</option>
                                 <option value="dailymotion">Dailymotion</option>
+                                <option value="facebook">Facebook</option>
+                                <option value="instagram">Instagram</option>
+                                <option value="tiktok">TikTok</option>
+                                <option value="twitter">Twitter/X</option>
+                                <option value="twitch">Twitch</option>
+                                <option value="streamable">Streamable</option>
+                                <option value="dropbox">Dropbox</option>
+                                <option value="photos">Google Photos</option>
                                 <option value="direct">Direct Video</option>
+                                <option value="other">Other</option>
                             </select>
                         </div>
                     </div>
@@ -2147,7 +2268,7 @@
                 });
 
                 // Add matching platforms
-                const platforms = ['youtube', 'drive', 'vimeo', 'dailymotion'];
+                const platforms = ['youtube', 'drive', 'vimeo', 'dailymotion', 'facebook', 'instagram', 'tiktok', 'twitter', 'twitch', 'streamable', 'dropbox', 'photos'];
                 platforms.forEach(platform => {
                     if (platform.includes(queryLower)) {
                         suggestions.push({
@@ -2187,15 +2308,23 @@
                             return {
                                 id: `playlist-${videoId}`,
                                 type: 'youtube_playlist',
-                                embedUrl: `https://www.youtube.com/embed/videoseries?list=${videoId}`,
+                                embedUrl: `https://www.youtube.com/embed/videoseries?list=${videoId}&autoplay=1&modestbranding=1&rel=0&playsinline=1`,
                                 thumbnail: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjcwIiB2aWV3Qm94PSIwIDAgMTAwIDcwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iNzAiIGZpbGw9IiNmMTBhMGIiLz48dGV4dCB4PSI1MCIgeT0iMzUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxMCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPllvdVR1YmUgUGxheWxpc3Q8L3RleHQ+PC9zdmc+',
                                 title: 'YouTube Playlist'
                             };
                         } else {
+                            // Try multiple embed options to avoid "Video unavailable"
+                            const embedUrls = [
+                                `https://www.youtube.com/embed/${videoId}?autoplay=1&modestbranding=1&rel=0&playsinline=1&origin=${encodeURIComponent(window.location.origin)}`,
+                                `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&modestbranding=1&rel=0&playsinline=1`,
+                                `https://www.youtube.com/embed/${videoId}?autoplay=1&origin=*`
+                            ];
+                            
                             return {
                                 id: videoId,
                                 type: 'youtube',
-                                embedUrl: `https://www.youtube.com/embed/${videoId}`,
+                                embedUrl: embedUrls[0], // Use first option, will fallback if needed
+                                fallbackUrls: embedUrls.slice(1),
                                 thumbnail: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
                                 title: 'YouTube Video'
                             };
@@ -2242,7 +2371,7 @@
                         return {
                             id: videoId,
                             type: 'vimeo',
-                            embedUrl: `https://player.vimeo.com/video/${videoId}`,
+                            embedUrl: `https://player.vimeo.com/video/${videoId}?autoplay=1&title=0&byline=0&portrait=0`,
                             thumbnail: `https://vumbnail.com/${videoId}.jpg`,
                             title: 'Vimeo Video'
                         };
@@ -2264,7 +2393,7 @@
                         return {
                             id: videoId,
                             type: 'dailymotion',
-                            embedUrl: `https://www.dailymotion.com/embed/video/${videoId}`,
+                            embedUrl: `https://www.dailymotion.com/embed/video/${videoId}?autoplay=1`,
                             thumbnail: `https://www.dailymotion.com/thumbnail/video/${videoId}`,
                             title: 'Dailymotion Video'
                         };
@@ -2286,7 +2415,7 @@
                         return {
                             id: videoId,
                             type: 'facebook',
-                            embedUrl: `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(url)}`,
+                            embedUrl: `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(url)}&show_text=0&autoplay=1`,
                             thumbnail: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjcwIiB2aWV3Qm94PSIwIDAgMTAwIDcwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iNzAiIGZpbGw9IiMzYjU5OTgiLz48dGV4dCB4PSI1MCIgeT0iMzUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSI4IiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+RmFjZWJvb2sgVmlkZW88L3RleHQ+PC9zdmc+',
                             title: 'Facebook Video'
                         };
@@ -2372,7 +2501,7 @@
                             return {
                                 id: match[2],
                                 type: 'twitch',
-                                embedUrl: `https://clips.twitch.tv/embed?clip=${match[2]}`,
+                                embedUrl: `https://clips.twitch.tv/embed?clip=${match[2]}&parent=${window.location.hostname}`,
                                 thumbnail: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjcwIiB2aWV3Qm94PSIwIDAgMTAwIDcwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iNzAiIGZpbGw9IiM2NDE0N2UiLz48dGV4dCB4PSI1MCIgeT0iMzUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSI4IiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+VHdpdGNoIENsaXA8L3RleHQ+PC9zdmc+',
                                 title: 'Twitch Clip'
                             };
@@ -2380,7 +2509,7 @@
                             return {
                                 id: match[1],
                                 type: 'twitch',
-                                embedUrl: `https://player.twitch.tv/?video=${match[1]}`,
+                                embedUrl: `https://player.twitch.tv/?video=${match[1]}&parent=${window.location.hostname}`,
                                 thumbnail: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjcwIiB2aWV3Qm94PSIwIDAgMTAwIDcwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iNzAiIGZpbGw9IiM2NDE0N2UiLz48dGV4dCB4PSI1MCIgeT0iMzUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSI4IiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+VHdpdGNoIFZpZGVvPC90ZXh0Pjwvc3ZnPg==',
                                 title: 'Twitch Video'
                             };
@@ -2444,7 +2573,7 @@
                         const photoId = match[1];
                         return {
                             id: photoId,
-                            type: 'google_photos',
+                            type: 'photos',
                             embedUrl: url,
                             thumbnail: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjcwIiB2aWV3Qm94PSIwIDAgMTAwIDcwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iNzAiIGZpbGw9IiMzNGE4NTMiLz48dGV4dCB4PSI1MCIgeT0iMzUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSI4IiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+R29vZ2xlIFBob3RvczwvdGV4dD48L3N2Zz4=',
                             title: 'Google Photos'
@@ -2495,7 +2624,8 @@
                             originalUrl: url,
                             thumbnail: result.thumbnail,
                             title: result.title,
-                            description: `Video from ${result.type}`
+                            description: `Video from ${result.type}`,
+                            fallbackUrls: result.fallbackUrls || []
                         };
                     }
                 }
@@ -2509,7 +2639,8 @@
                     originalUrl: url,
                     thumbnail: defaultSVG,
                     title: 'Custom Video',
-                    description: 'Video from unknown source'
+                    description: 'Video from unknown source',
+                    fallbackUrls: []
                 };
             }
         }
@@ -2756,9 +2887,9 @@
             await loadVideosFromAirtable();
             setupEventListeners();
             loadRecentlyPlayed();
-            showNotification('Professional Video Player Initialized', 'success');
+            showNotification('Universal Video Player Initialized - All Platforms Supported!', 'success');
 
-            // FIX: Don't auto-load first video on initial load
+            // Don't auto-load first video on initial load
             // User must explicitly click to play a video
         }
 
@@ -2829,7 +2960,7 @@
                 }
 
                 await processVideos();
-                // FIX: Don't auto-load first video on initial load
+                // Don't auto-load first video on initial load
                 performSearch('', currentFilters, false);
 
             } catch (error) {
@@ -2897,7 +3028,7 @@
 
                     searchLoading.classList.remove('active');
 
-                    // FIX: Never auto-load videos after search/filter operations
+                    // Never auto-load videos after search/filter operations
                     // Only update UI to reflect current state
                     if (currentVideos.length > 0) {
                         // Try to maintain current video selection if it exists in filtered results
@@ -3041,7 +3172,7 @@
             currentVideos = SortingService.sortVideos(currentVideos, sortOption, recentlyPlayedVideos);
             generateVideoList();
 
-            // FIX: Don't auto-load when sorting, just update the display
+            // Don't auto-load when sorting, just update the display
             if (currentVideos.length > 0) {
                 // Try to maintain current selection
                 if (currentVideoIndex >= 0 && currentVideoIndex < currentVideos.length) {
@@ -3057,7 +3188,7 @@
         // Apply platform filter
         function applyPlatformFilter(platform) {
             currentFilters.platform = platform;
-            // FIX: Never auto-load when changing platform filters
+            // Never auto-load when changing platform filters
             performSearch(currentSearchTerm, currentFilters, false);
         }
 
@@ -3079,31 +3210,69 @@
                 // Generate embed URLs based on video type
                 switch (video.type) {
                     case "youtube":
-                        embedUrl = `https://www.youtube.com/embed/${video.videoId}?rel=0&modestbranding=1&autoplay=1`;
+                        embedUrl = video.url; // Use the stored URL which has the proper embed format
                         badgeClass = "badge-youtube";
                         badgeText = "YouTube";
                         break;
                     case "youtube_playlist":
-                        embedUrl = `https://www.youtube.com/embed/videoseries?list=${video.videoId}&rel=0&modestbranding=1&autoplay=1`;
+                        embedUrl = video.url;
                         badgeClass = "badge-youtube";
                         badgeText = "YouTube Playlist";
                         break;
                     case "drive":
-                        embedUrl = video.alternateUrl && fallbackMessage.style.display === 'flex'
-                            ? video.alternateUrl
-                            : `https://drive.google.com/file/d/${video.videoId}/preview`;
+                        embedUrl = video.url;
                         badgeClass = "badge-drive";
                         badgeText = "Google Drive";
                         break;
                     case "vimeo":
-                        embedUrl = `https://player.vimeo.com/video/${video.videoId}?autoplay=1`;
-                        badgeClass = "badge-other";
+                        embedUrl = video.url;
+                        badgeClass = "badge-vimeo";
                         badgeText = "Vimeo";
                         break;
                     case "dailymotion":
-                        embedUrl = `https://www.dailymotion.com/embed/video/${video.videoId}?autoplay=1`;
-                        badgeClass = "badge-other";
+                        embedUrl = video.url;
+                        badgeClass = "badge-dailymotion";
                         badgeText = "Dailymotion";
+                        break;
+                    case "facebook":
+                        embedUrl = video.url;
+                        badgeClass = "badge-facebook";
+                        badgeText = "Facebook";
+                        break;
+                    case "instagram":
+                        embedUrl = video.url;
+                        badgeClass = "badge-instagram";
+                        badgeText = "Instagram";
+                        break;
+                    case "tiktok":
+                        embedUrl = video.url;
+                        badgeClass = "badge-tiktok";
+                        badgeText = "TikTok";
+                        break;
+                    case "twitter":
+                        embedUrl = video.url;
+                        badgeClass = "badge-twitter";
+                        badgeText = "Twitter/X";
+                        break;
+                    case "twitch":
+                        embedUrl = video.url;
+                        badgeClass = "badge-twitch";
+                        badgeText = "Twitch";
+                        break;
+                    case "streamable":
+                        embedUrl = video.url;
+                        badgeClass = "badge-streamable";
+                        badgeText = "Streamable";
+                        break;
+                    case "dropbox":
+                        embedUrl = video.url;
+                        badgeClass = "badge-dropbox";
+                        badgeText = "Dropbox";
+                        break;
+                    case "photos":
+                        embedUrl = video.url;
+                        badgeClass = "badge-photos";
+                        badgeText = "Google Photos";
                         break;
                     case "direct":
                     default:
@@ -3122,6 +3291,22 @@
                 // Clear the timeout when video loads successfully
                 videoPlayer.onload = () => {
                     clearTimeout(loadingTimeout);
+                };
+
+                videoPlayer.onerror = () => {
+                    clearTimeout(loadingTimeout);
+                    // Try fallback URLs for YouTube
+                    if (video.type === 'youtube' && video.fallbackUrls && video.fallbackUrls.length > 0) {
+                        const nextUrl = video.fallbackUrls.shift();
+                        if (nextUrl) {
+                            console.log('Trying fallback URL:', nextUrl);
+                            videoPlayer.src = nextUrl;
+                        } else {
+                            showFallbackMessage();
+                        }
+                    } else {
+                        showFallbackMessage();
+                    }
                 };
 
                 videoPlayer.src = embedUrl;
@@ -3172,7 +3357,8 @@
                     type: parsed.type,
                     duration: '--:--',
                     url: parsed.embedUrl,
-                    thumbnail: parsed.thumbnail
+                    thumbnail: parsed.thumbnail,
+                    fallbackUrls: parsed.fallbackUrls || []
                 };
 
                 // Fetch additional data for YouTube videos
@@ -3268,7 +3454,7 @@
                     } else if (video.type === 'drive') {
                         thumbUrl = `https://drive.google.com/thumbnail?id=${video.videoId}&sz=w400`;
                     } else {
-                        thumbUrl = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjcwIiB2aWV3Qm94PSIwIDAgMTAwIDcwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMj000MC9zdmciPjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iNzAiIGZpbGw9IiMzMzMiLz48cGF0aCBkPSJNMzUgMzBMNTAgNDVINjVMMzUiIHN0cm9rZT0iIzk5OSIgc3Ryb2tlLXdpZHRoPSIyIi8+PC9zdmc+';
+                        thumbUrl = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjcwIiB2aWV3Qm94PSIwIDAgMTAwIDcwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iNzAiIGZpbGw9IiMzMzMiLz48cGF0aCBkPSJNMzUgMzBMNTAgNDVINjVMMzUiIHN0cm9rZT0iIzk5OSIgc3Ryb2tlLXdpZHRoPSIyIi8+PC9zdmc+';
                     }
                 }
 
@@ -3504,7 +3690,7 @@
                     tab.classList.add('active');
                     const platform = tab.dataset.platform;
                     
-                    // FIX: Store current video before filtering to maintain selection
+                    // Store current video before filtering to maintain selection
                     const currentVideoBeforeFilter = currentVideoIndex >= 0 ? currentVideos[currentVideoIndex] : null;
                     
                     applyPlatformFilter(platform);
@@ -3536,7 +3722,7 @@
             videoSearch.addEventListener('input', (e) => {
                 const query = e.target.value;
                 showSearchSuggestions(query);
-                // FIX: Never auto-load when searching
+                // Never auto-load when searching
                 performSearch(query, currentFilters, false);
             });
 
