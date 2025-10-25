@@ -1780,6 +1780,7 @@
             <div class="player-section slide-in-left">
                 <div class="video-container">
                     <iframe id="videoPlayer" src="" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe>
+                    <video id="directVideoPlayer" controls style="display: none;"></video>
                     <div class="fallback-message" id="fallbackMessage">
                         <h3><i class="fas fa-exclamation-triangle"></i> Preview Not Available</h3>
                         <p>This video cannot be previewed directly. Try one of these options:</p>
@@ -1828,6 +1829,12 @@
                         <span class="platform-tag">Dropbox</span>
                         <span class="platform-tag">Google Photos</span>
                         <span class="platform-tag">MP4/WebM</span>
+                        <span class="platform-tag">M3U8</span>
+                        <span class="platform-tag">M4V</span>
+                        <span class="platform-tag">MOV</span>
+                        <span class="platform-tag">AVI</span>
+                        <span class="platform-tag">MKV</span>
+                        <span class="platform-tag">Any URL</span>
                     </div>
                 </div>
             </div>
@@ -1971,7 +1978,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <script>
-        // ==================== PROFESSIONAL CONFIGURATION ====================
+        // ==================== FIXED PROFESSIONAL CONFIGURATION ====================
         const CONFIG = {
             AIRTABLE: {
                 BASE_ID: 'appFZTp4rpbWSdLVO',
@@ -1991,13 +1998,22 @@
                 CURRENT_VIDEO_KEY: 'videoPlayer_currentVideo',
                 FILTER_STATE_KEY: 'videoPlayer_filterState',
                 RECENTLY_PLAYED_KEY: 'videoPlayer_recentlyPlayed'
+            },
+            VIDEO: {
+                SUPPORTED_EXTENSIONS: ['mp4', 'webm', 'ogg', 'mov', 'mkv', 'flv', 'avi', 'm4v', '3gp', 'wmv', 'mpeg', 'mpg', 'm4a', 'm3u8'],
+                MAX_FILE_SIZE: 500 * 1024 * 1024, // 500MB
+                ALLOWED_MIME_TYPES: ['video/mp4', 'video/webm', 'video/ogg', 'video/quicktime', 'video/x-matroska', 'video/x-flv', 'video/x-msvideo', 'application/x-mpegURL']
             }
         };
 
-        // ==================== ENHANCED UNIVERSAL VIDEO URL PARSER ====================
+        // ==================== FIXED UNIVERSAL VIDEO URL PARSER ====================
         class UniversalVideoParser {
             static parseURL(url) {
                 if (!url) return null;
+                
+                // Clean and validate URL
+                const cleanedUrl = this.cleanUrl(url);
+                if (!cleanedUrl) return null;
                 
                 // Try each platform parser in order
                 const parsers = [
@@ -2013,28 +2029,73 @@
                     this.parseStreamable,
                     this.parseDropbox,
                     this.parseGooglePhotos,
-                    this.parseDirectVideo
+                    this.parseWistia,
+                    this.parseLoom,
+                    this.parseVidyard,
+                    this.parseBrightcove,
+                    this.parseKaltura,
+                    this.parseDirectVideo,
+                    this.parseM3U8,
+                    this.parseGenericEmbed
                 ];
                 
                 for (const parser of parsers) {
-                    const result = parser(url);
-                    if (result) {
-                        return {
-                            ...result,
-                            originalUrl: url
-                        };
+                    try {
+                        const result = parser(cleanedUrl);
+                        if (result) {
+                            return {
+                                ...result,
+                                originalUrl: cleanedUrl,
+                                parsedAt: new Date().toISOString()
+                            };
+                        }
+                    } catch (error) {
+                        console.warn(`Parser ${parser.name} failed:`, error);
+                        continue;
                     }
                 }
                 
-                // Fallback for unknown URLs
-                return this.parseUnknown(url);
+                // Final fallback - accept ANY URL
+                return this.parseAnyUrl(cleanedUrl);
+            }
+
+            static cleanUrl(url) {
+                try {
+                    // Remove extra spaces and validate URL format
+                    const trimmed = url.trim();
+                    if (!trimmed) return null;
+                    
+                    // Check if it's a valid URL format
+                    if (!this.isValidUrl(trimmed)) {
+                        // Try to fix common URL issues
+                        if (!trimmed.startsWith('http')) {
+                            return 'https://' + trimmed;
+                        }
+                        return null;
+                    }
+                    
+                    return trimmed;
+                } catch (error) {
+                    console.error('URL cleaning error:', error);
+                    return null;
+                }
+            }
+
+            static isValidUrl(string) {
+                try {
+                    new URL(string);
+                    return true;
+                } catch (_) {
+                    return false;
+                }
             }
 
             static parseYouTube(url) {
                 const patterns = [
                     /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/v\/|youtube\.com\/shorts\/)([^&?\/#]+)/,
                     /youtube\.com\/playlist\?list=([^&?\/#]+)/,
-                    /music\.youtube\.com\/watch\?v=([^&?\/#]+)/
+                    /music\.youtube\.com\/watch\?v=([^&?\/#]+)/,
+                    /youtube\.com\/live\/([^&?\/#]+)/
                 ];
 
                 for (const pattern of patterns) {
@@ -2042,28 +2103,34 @@
                     if (match) {
                         const videoId = match[1];
                         
-                        // Handle playlists
                         if (url.includes('playlist')) {
                             return {
                                 videoId: `playlist-${videoId}`,
                                 type: 'youtube_playlist',
                                 embedUrls: [
-                                    `https://www.youtube.com/embed/videoseries?list=${videoId}&autoplay=1&modestbranding=1&rel=0&playsinline=1&origin=${encodeURIComponent(window.location.origin)}`,
-                                    `https://www.youtube-nocookie.com/embed/videoseries?list=${videoId}&autoplay=1&modestbranding=1&rel=0&playsinline=1`,
-                                    `https://www.youtube.com/embed/videoseries?list=${videoId}&autoplay=1&origin=*`
+                                    `https://www.youtube.com/embed/videoseries?list=${videoId}&autoplay=1&modestbranding=1&rel=0&playsinline=1`,
+                                    `https://www.youtube-nocookie.com/embed/videoseries?list=${videoId}&autoplay=1&modestbranding=1&rel=0&playsinline=1`
                                 ],
                                 thumbnail: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjcwIiB2aWV3Qm94PSIwIDAgMTAwIDcwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iNzAiIGZpbGw9IiNmMTBhMGIiLz48dGV4dCB4PSI1MCIgeT0iMzUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxMCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPllvdVR1YmUgUGxheWxpc3Q8L3RleHQ+PC9zdmc+',
                                 title: 'YouTube Playlist',
                                 description: 'YouTube Playlist'
                             };
+                        } else if (url.includes('live')) {
+                            return {
+                                videoId: videoId,
+                                type: 'youtube_live',
+                                embedUrls: [
+                                    `https://www.youtube.com/embed/live_stream?channel=${videoId}&autoplay=1`,
+                                    `https://www.youtube-nocookie.com/embed/live_stream?channel=${videoId}&autoplay=1`
+                                ],
+                                thumbnail: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
+                                title: 'YouTube Live Stream',
+                                description: 'YouTube Live Stream'
+                            };
                         } else {
-                            // Regular YouTube videos with multiple fallback options
                             const embedUrls = [
-                                `https://www.youtube.com/embed/${videoId}?autoplay=1&modestbranding=1&rel=0&playsinline=1&origin=${encodeURIComponent(window.location.origin)}`,
-                                `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&modestbranding=1&rel=0&playsinline=1`,
-                                `https://www.youtube.com/embed/${videoId}?autoplay=1&origin=*`,
-                                `https://yewtu.be/embed/${videoId}?autoplay=1`,
-                                `https://invidious.snopyta.org/embed/${videoId}?autoplay=1`
+                                `https://www.youtube.com/embed/${videoId}?autoplay=1&modestbranding=1&rel=0&playsinline=1`,
+                                `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&modestbranding=1&rel=0&playsinline=1`
                             ];
                             return {
                                 videoId: videoId,
@@ -2110,7 +2177,9 @@
             static parseVimeo(url) {
                 const patterns = [
                     /vimeo\.com\/(\d+)/,
-                    /player\.vimeo\.com\/video\/(\d+)/
+                    /player\.vimeo\.com\/video\/(\d+)/,
+                    /vimeo\.com\/channels\/[^\/]+\/(\d+)/,
+                    /vimeo\.com\/groups\/[^\/]+\/videos\/(\d+)/
                 ];
 
                 for (const pattern of patterns) {
@@ -2121,8 +2190,7 @@
                             videoId: videoId,
                             type: 'vimeo',
                             embedUrls: [
-                                `https://player.vimeo.com/video/${videoId}?autoplay=1&title=0&byline=0&portrait=0&dnt=1`,
-                                `https://vimeo.com/${videoId}`
+                                `https://player.vimeo.com/video/${videoId}?autoplay=1&title=0&byline=0&portrait=0&dnt=1`
                             ],
                             thumbnail: `https://vumbnail.com/${videoId}.jpg`,
                             title: 'Vimeo Video',
@@ -2137,7 +2205,8 @@
                 const patterns = [
                     /dailymotion\.com\/video\/([^_]+)/,
                     /dailymotion\.com\/embed\/video\/([^?]+)/,
-                    /dai\.ly\/([^?]+)/
+                    /dai\.ly\/([^?]+)/,
+                    /dailymotion\.com\/[^\/]+\/video\/([^_]+)/
                 ];
 
                 for (const pattern of patterns) {
@@ -2148,8 +2217,7 @@
                             videoId: videoId,
                             type: 'dailymotion',
                             embedUrls: [
-                                `https://www.dailymotion.com/embed/video/${videoId}?autoplay=1`,
-                                `https://dailymotion.com/embed/video/${videoId}`
+                                `https://www.dailymotion.com/embed/video/${videoId}?autoplay=1`
                             ],
                             thumbnail: `https://www.dailymotion.com/thumbnail/video/${videoId}`,
                             title: 'Dailymotion Video',
@@ -2161,19 +2229,29 @@
             }
 
             static parseFacebook(url) {
-                if (url.includes('facebook.com') || url.includes('fb.watch')) {
-                    const encodedUrl = encodeURIComponent(url);
-                    return {
-                        videoId: btoa(url).replace(/=/g, ''),
-                        type: 'facebook',
-                        embedUrls: [
-                            `https://www.facebook.com/plugins/video.php?href=${encodedUrl}&show_text=0&autoplay=1&width=500`,
-                            `https://www.facebook.com/plugins/video.php?href=${encodedUrl}&show_text=0&autoplay=1`
-                        ],
-                        thumbnail: '',
-                        title: 'Facebook Video',
-                        description: 'Facebook Video'
-                    };
+                const patterns = [
+                    /facebook\.com\/([^\/]+)\/videos\/(\d+)/,
+                    /facebook\.com\/watch\/\?v=(\d+)/,
+                    /fb\.watch\/([^\/]+)/,
+                    /facebook\.com\/[^\/]+\/videos\/[^\/]+\/(\d+)/
+                ];
+
+                for (const pattern of patterns) {
+                    const match = url.match(pattern);
+                    if (match) {
+                        const videoId = match[1] || match[2];
+                        const encodedUrl = encodeURIComponent(url);
+                        return {
+                            videoId: videoId,
+                            type: 'facebook',
+                            embedUrls: [
+                                `https://www.facebook.com/plugins/video.php?href=${encodedUrl}&show_text=0&autoplay=1&width=500`
+                            ],
+                            thumbnail: '',
+                            title: 'Facebook Video',
+                            description: 'Facebook Video'
+                        };
+                    }
                 }
                 return null;
             }
@@ -2181,7 +2259,8 @@
             static parseInstagram(url) {
                 const patterns = [
                     /instagram\.com\/(?:p|reel|tv)\/([^\/?]+)/,
-                    /instagram\.com\/p\/([^\/?]+)\/embed/
+                    /instagram\.com\/p\/([^\/?]+)\/embed/,
+                    /instagr\.am\/(?:p|reel|tv)\/([^\/?]+)/
                 ];
 
                 for (const pattern of patterns) {
@@ -2206,37 +2285,56 @@
             }
 
             static parseTikTok(url) {
-                if (url.includes('tiktok.com')) {
-                    const videoId = url.split('/').pop().split('?')[0];
-                    return {
-                        videoId: videoId,
-                        type: 'tiktok',
-                        embedUrls: [
-                            `https://www.tiktok.com/embed/v2/${videoId}`,
-                            `https://www.tiktok.com/embed/${videoId}`
-                        ],
-                        thumbnail: '',
-                        title: 'TikTok Video',
-                        description: 'TikTok Video'
-                    };
+                const patterns = [
+                    /tiktok\.com\/@[^\/]+\/video\/(\d+)/,
+                    /tiktok\.com\/[^\/]+\/video\/(\d+)/,
+                    /vm\.tiktok\.com\/([^\/]+)/,
+                    /vt\.tiktok\.com\/([^\/]+)/
+                ];
+
+                for (const pattern of patterns) {
+                    const match = url.match(pattern);
+                    if (match) {
+                        const videoId = match[1];
+                        return {
+                            videoId: videoId,
+                            type: 'tiktok',
+                            embedUrls: [
+                                `https://www.tiktok.com/embed/v2/${videoId}`
+                            ],
+                            thumbnail: '',
+                            title: 'TikTok Video',
+                            description: 'TikTok Video'
+                        };
+                    }
                 }
                 return null;
             }
 
             static parseTwitter(url) {
-                if (url.includes('twitter.com') || url.includes('x.com')) {
-                    const encodedUrl = encodeURIComponent(url);
-                    return {
-                        videoId: btoa(url).replace(/=/g, ''),
-                        type: 'twitter',
-                        embedUrls: [
-                            `https://twitframe.com/show?url=${encodedUrl}`,
-                            `https://platform.twitter.com/embed/Tweet.html?url=${encodedUrl}`
-                        ],
-                        thumbnail: '',
-                        title: 'Twitter/X Video',
-                        description: 'Twitter/X Video'
-                    };
+                const patterns = [
+                    /twitter\.com\/[^\/]+\/status\/(\d+)/,
+                    /x\.com\/[^\/]+\/status\/(\d+)/,
+                    /twitter\.com\/i\/cards\/[^\/]+\/(\d+)/
+                ];
+
+                for (const pattern of patterns) {
+                    const match = url.match(pattern);
+                    if (match) {
+                        const tweetId = match[1];
+                        const encodedUrl = encodeURIComponent(url);
+                        return {
+                            videoId: tweetId,
+                            type: 'twitter',
+                            embedUrls: [
+                                `https://twitframe.com/show?url=${encodedUrl}`,
+                                `https://platform.twitter.com/embed/Tweet.html?url=${encodedUrl}`
+                            ],
+                            thumbnail: '',
+                            title: 'Twitter/X Video',
+                            description: 'Twitter/X Video'
+                        };
+                    }
                 }
                 return null;
             }
@@ -2244,6 +2342,7 @@
             static parseTwitch(url) {
                 const videoPattern = /twitch\.tv\/videos\/(\d+)/;
                 const clipPattern = /twitch\.tv\/(?:\w+)\/clip\/([^?]+)/;
+                const streamPattern = /twitch\.tv\/([^?]+)/;
                 
                 const videoMatch = url.match(videoPattern);
                 if (videoMatch) {
@@ -2251,8 +2350,7 @@
                         videoId: videoMatch[1],
                         type: 'twitch',
                         embedUrls: [
-                            `https://player.twitch.tv/?video=${videoMatch[1]}&parent=${window.location.hostname}&autoplay=true`,
-                            `https://player.twitch.tv/?video=${videoMatch[1]}&parent=localhost&autoplay=true`
+                            `https://player.twitch.tv/?video=${videoMatch[1]}&parent=${window.location.hostname}&autoplay=true`
                         ],
                         thumbnail: '',
                         title: 'Twitch Video',
@@ -2266,12 +2364,25 @@
                         videoId: clipMatch[1],
                         type: 'twitch',
                         embedUrls: [
-                            `https://clips.twitch.tv/embed?clip=${clipMatch[1]}&parent=${window.location.hostname}&autoplay=true`,
-                            `https://clips.twitch.tv/embed?clip=${clipMatch[1]}&parent=localhost&autoplay=true`
+                            `https://clips.twitch.tv/embed?clip=${clipMatch[1]}&parent=${window.location.hostname}&autoplay=true`
                         ],
                         thumbnail: '',
                         title: 'Twitch Clip',
                         description: 'Twitch Clip'
+                    };
+                }
+                
+                const streamMatch = url.match(streamPattern);
+                if (streamMatch && !url.includes('/clip/') && !url.includes('/videos/')) {
+                    return {
+                        videoId: streamMatch[1],
+                        type: 'twitch',
+                        embedUrls: [
+                            `https://player.twitch.tv/?channel=${streamMatch[1]}&parent=${window.location.hostname}&autoplay=true`
+                        ],
+                        thumbnail: '',
+                        title: 'Twitch Stream',
+                        description: 'Twitch Live Stream'
                     };
                 }
                 
@@ -2286,8 +2397,7 @@
                         videoId: match[1],
                         type: 'streamable',
                         embedUrls: [
-                            `https://streamable.com/e/${match[1]}?autoplay=1`,
-                            `https://streamable.com/o/${match[1]}`
+                            `https://streamable.com/e/${match[1]}?autoplay=1`
                         ],
                         thumbnail: '',
                         title: 'Streamable Video',
@@ -2305,8 +2415,7 @@
                         videoId: match[1],
                         type: 'dropbox',
                         embedUrls: [
-                            `https://www.dropbox.com/s/${match[1]}/${match[2]}?raw=1`,
-                            `https://dl.dropboxusercontent.com/s/${match[1]}/${match[2]}`
+                            `https://www.dropbox.com/s/${match[1]}/${match[2]}?raw=1`
                         ],
                         thumbnail: '',
                         title: 'Dropbox Video',
@@ -2330,10 +2439,101 @@
                 return null;
             }
 
+            static parseWistia(url) {
+                const pattern = /wistia\.com\/medias\/([^&?\/#]+)/;
+                const match = url.match(pattern);
+                if (match) {
+                    return {
+                        videoId: match[1],
+                        type: 'wistia',
+                        embedUrls: [
+                            `https://fast.wistia.net/embed/iframe/${match[1]}?autoplay=1`
+                        ],
+                        thumbnail: `https://embed-ssl.wistia.com/deliveries/${match[1]}.jpg`,
+                        title: 'Wistia Video',
+                        description: 'Wistia Video'
+                    };
+                }
+                return null;
+            }
+
+            static parseLoom(url) {
+                const pattern = /loom\.com\/(?:share|embed)\/([^&?\/#]+)/;
+                const match = url.match(pattern);
+                if (match) {
+                    return {
+                        videoId: match[1],
+                        type: 'loom',
+                        embedUrls: [
+                            `https://www.loom.com/embed/${match[1]}?autoplay=1`
+                        ],
+                        thumbnail: `https://cdn.loom.com/sessions/thumbnails/${match[1]}-00001.png`,
+                        title: 'Loom Video',
+                        description: 'Loom Video'
+                    };
+                }
+                return null;
+            }
+
+            static parseVidyard(url) {
+                const pattern = /vidyard\.com\/(?:watch|embed)\/([^&?\/#]+)/;
+                const match = url.match(pattern);
+                if (match) {
+                    return {
+                        videoId: match[1],
+                        type: 'vidyard',
+                        embedUrls: [
+                            `https://play.vidyard.com/${match[1]}.html?autoplay=1`
+                        ],
+                        thumbnail: `https://play.vidyard.com/${match[1]}.jpg`,
+                        title: 'Vidyard Video',
+                        description: 'Vidyard Video'
+                    };
+                }
+                return null;
+            }
+
+            static parseBrightcove(url) {
+                const pattern = /players\.brightcove\.net\/(\d+)\/([^\/]+)_([^\/]+)\/index\.html\?videoId=([^&]+)/;
+                const match = url.match(pattern);
+                if (match) {
+                    return {
+                        videoId: match[4],
+                        type: 'brightcove',
+                        embedUrls: [url],
+                        thumbnail: '',
+                        title: 'Brightcove Video',
+                        description: 'Brightcove Video'
+                    };
+                }
+                return null;
+            }
+
+            static parseKaltura(url) {
+                const pattern = /kaltura\.com\/[^\/]+\/embed\/[^\/]+\/entry_id\/([^&?\/#]+)/;
+                const match = url.match(pattern);
+                if (match) {
+                    return {
+                        videoId: match[1],
+                        type: 'kaltura',
+                        embedUrls: [url],
+                        thumbnail: '',
+                        title: 'Kaltura Video',
+                        description: 'Kaltura Video'
+                    };
+                }
+                return null;
+            }
+
             static parseDirectVideo(url) {
-                const videoExtensions = ['.mp4', '.webm', '.ogg', '.mov', '.mkv', '.flv', '.avi'];
-                const isVideo = videoExtensions.some(ext => url.toLowerCase().includes(ext));
-                
+                const videoExtensions = CONFIG.VIDEO.SUPPORTED_EXTENSIONS;
+                const isVideo = videoExtensions.some(ext => {
+                    const lowerUrl = url.toLowerCase();
+                    return lowerUrl.includes(`.${ext}`) || 
+                           lowerUrl.includes(`/${ext}:`) ||
+                           lowerUrl.includes(`type=${ext}`);
+                });
+
                 if (isVideo) {
                     return {
                         videoId: btoa(url).replace(/=/g, ''),
@@ -2347,24 +2547,78 @@
                 return null;
             }
 
-            static parseUnknown(url) {
+            static parseM3U8(url) {
+                if (url.toLowerCase().includes('.m3u8')) {
+                    return {
+                        videoId: btoa(url).replace(/=/g, ''),
+                        type: 'm3u8',
+                        embedUrls: [url],
+                        thumbnail: '',
+                        title: 'HLS Stream',
+                        description: 'HTTP Live Streaming'
+                    };
+                }
+                return null;
+            }
+
+            static parseGenericEmbed(url) {
+                // Check for generic embed patterns
+                const embedPatterns = [
+                    /<iframe[^>]*src=["']([^"']+)["']/,
+                    /embed\/([^&?\/#]+)/,
+                    /player\.([^\/]+)\.com\/([^\/]+)/
+                ];
+
+                for (const pattern of embedPatterns) {
+                    const match = url.match(pattern);
+                    if (match) {
+                        return {
+                            videoId: btoa(url).replace(/=/g, ''),
+                            type: 'embed',
+                            embedUrls: [url],
+                            thumbnail: '',
+                            title: 'Embedded Video',
+                            description: 'Embedded Video Content'
+                        };
+                    }
+                }
+                return null;
+            }
+
+            static parseAnyUrl(url) {
+                // FINAL FALLBACK - ACCEPT ANY URL
                 return {
                     videoId: btoa(url).replace(/=/g, ''),
                     type: 'other',
                     embedUrls: [url],
                     thumbnail: '',
                     title: 'Custom Video',
-                    description: 'Video from unknown source'
+                    description: `Video from ${new URL(url).hostname}`
                 };
+            }
+
+            // SIMPLIFIED VALIDATION - JUST CHECK IF IT'S A VALID URL
+            static async validateVideoURL(url) {
+                try {
+                    const parsed = this.parseURL(url);
+                    if (!parsed) {
+                        return { valid: false, error: 'Invalid URL format' };
+                    }
+
+                    return { valid: true, parsed };
+                } catch (error) {
+                    return { valid: false, error: 'Failed to parse URL' };
+                }
             }
         }
 
-        // ==================== ENHANCED VIDEO PLAYER CONTROLLER ====================
+        // ==================== FIXED VIDEO PLAYER CONTROLLER ====================
         class EnhancedVideoPlayer {
             constructor(videoManager) {
                 this.videoManager = videoManager;
                 this.videoContainer = document.querySelector('.video-container');
                 this.videoPlayer = document.getElementById('videoPlayer');
+                this.directVideoPlayer = document.getElementById('directVideoPlayer');
                 this.currentVideoTitle = document.getElementById('currentVideoTitle');
                 this.currentVideoDescription = document.getElementById('currentVideoDescription');
                 this.currentPlatformBadge = document.getElementById('currentPlatformBadge');
@@ -2372,6 +2626,25 @@
                 this.currentEmbedIndex = 0;
                 this.currentVideoData = null;
                 this.setupFallbackOptions();
+                this.setupVideoEventListeners();
+            }
+
+            setupVideoEventListeners() {
+                // Handle video ended event for direct videos
+                this.directVideoPlayer.addEventListener('ended', () => {
+                    this.videoManager.showNotification('Video ended', 'info');
+                    // Auto-play next video if available
+                    const nextVideo = this.videoManager.nextVideo();
+                    if (nextVideo) {
+                        this.loadVideo(nextVideo);
+                    }
+                });
+
+                // Handle video errors for direct videos
+                this.directVideoPlayer.addEventListener('error', (e) => {
+                    console.error('Direct video error:', e);
+                    this.showFallbackMessage(this.currentVideoData);
+                });
             }
 
             async loadVideo(video) {
@@ -2382,15 +2655,21 @@
                 this.currentEmbedIndex = 0;
                 this.currentVideoData = video;
 
+                // Reset both players
+                this.videoPlayer.style.display = 'none';
+                this.directVideoPlayer.style.display = 'none';
+                this.videoPlayer.src = '';
+                this.directVideoPlayer.src = '';
+
                 // Show loading state
-                this.currentVideoTitle.textContent = 'Loading...';
-                this.currentVideoDescription.textContent = 'Fetching video information...';
+                this.currentVideoTitle.textContent = video.title || 'Loading...';
+                this.currentVideoDescription.textContent = video.description || 'Loading video content...';
 
                 let embedUrls = video.embedUrls || [video.url || ""];
                 let badgeClass = "";
                 let badgeText = "";
 
-                // Determine platform and set appropriate badge
+                // Enhanced platform detection
                 switch (video.type) {
                     case "youtube":
                         badgeClass = "badge-youtube";
@@ -2399,6 +2678,10 @@
                     case "youtube_playlist":
                         badgeClass = "badge-youtube";
                         badgeText = "YouTube Playlist";
+                        break;
+                    case "youtube_live":
+                        badgeClass = "badge-youtube";
+                        badgeText = "YouTube Live";
                         break;
                     case "drive":
                         badgeClass = "badge-drive";
@@ -2445,15 +2728,20 @@
                         badgeText = "Google Photos";
                         break;
                     case "direct":
-                        // For direct video files, use a video element instead of iframe
+                        this.loadDirectVideo(video, embedUrls[0]);
+                        return;
+                    case "m3u8":
+                        badgeClass = "badge-other";
+                        badgeText = "HLS Stream";
                         this.loadDirectVideo(video, embedUrls[0]);
                         return;
                     default:
+                        // For unknown types, try both methods
                         badgeClass = "badge-other";
                         badgeText = video.type.charAt(0).toUpperCase() + video.type.slice(1);
                 }
 
-                // Set up loading timeout and error handling
+                // Enhanced loading with timeout and error handling
                 const loadingTimeout = setTimeout(() => {
                     this.showFallbackMessage(video);
                 }, 10000);
@@ -2483,46 +2771,42 @@
             }
 
             loadDirectVideo(video, url) {
-                // Replace iframe with video element for direct video files
-                const videoContainer = this.videoPlayer.parentElement;
-                
-                // Remove existing video elements
-                const existingVideo = videoContainer.querySelector('video');
-                if (existingVideo) {
-                    existingVideo.remove();
-                }
-                
-                // Show the iframe again
+                // Enhanced direct video loading with better format support
                 this.videoPlayer.style.display = 'none';
-                
-                // Create video element
-                const videoElement = document.createElement('video');
-                videoElement.controls = true;
-                videoElement.autoplay = true;
-                videoElement.style.width = '100%';
-                videoElement.style.height = '100%';
-                videoElement.style.position = 'absolute';
-                videoElement.style.top = '0';
-                videoElement.style.left = '0';
-                
+                this.directVideoPlayer.style.display = 'block';
+
+                // Clear previous sources
+                this.directVideoPlayer.innerHTML = '';
+
                 const source = document.createElement('source');
                 source.src = url;
                 source.type = this.getVideoMimeType(url);
                 
-                videoElement.appendChild(source);
-                videoContainer.appendChild(videoElement);
+                this.directVideoPlayer.appendChild(source);
                 
+                // Add fallback message for unsupported formats
+                this.directVideoPlayer.innerHTML += `
+                    <p>Your browser doesn't support this video format. <a href="${url}" target="_blank">Download the video</a> instead.</p>
+                `;
+
+                // Enhanced error handling
+                this.directVideoPlayer.onerror = () => {
+                    this.showFallbackMessage(video);
+                };
+
+                this.directVideoPlayer.onloadeddata = () => {
+                    this.videoManager.showNotification('Loaded video file', 'success');
+                };
+
                 // Update UI
                 this.currentVideoTitle.textContent = video.title;
                 this.currentVideoDescription.textContent = video.description;
                 this.currentPlatformBadge.className = 'platform-badge badge-other';
-                this.currentPlatformBadge.textContent = 'Direct Video';
-                
-                this.videoManager.showNotification('Loaded direct video file', 'success');
+                this.currentPlatformBadge.textContent = 'Video File';
             }
 
             getVideoMimeType(url) {
-                const extension = url.split('.').pop().toLowerCase();
+                const extension = url.split('.').pop().toLowerCase().split('?')[0];
                 const mimeTypes = {
                     'mp4': 'video/mp4',
                     'webm': 'video/webm',
@@ -2530,7 +2814,14 @@
                     'mov': 'video/quicktime',
                     'mkv': 'video/x-matroska',
                     'flv': 'video/x-flv',
-                    'avi': 'video/x-msvideo'
+                    'avi': 'video/x-msvideo',
+                    'm4v': 'video/x-m4v',
+                    '3gp': 'video/3gpp',
+                    'wmv': 'video/x-ms-wmv',
+                    'mpeg': 'video/mpeg',
+                    'mpg': 'video/mpeg',
+                    'm4a': 'video/mp4',
+                    'm3u8': 'application/x-mpegURL'
                 };
                 return mimeTypes[extension] || 'video/mp4';
             }
@@ -2545,12 +2836,15 @@
                 } else {
                     // No more fallbacks, show error message
                     this.showFallbackMessage(video);
-                    this.videoManager.showNotification('Could not load video with any available method', 'error');
+                    this.videoManager.showNotification('Could not load video with embedded method', 'warning');
                 }
             }
 
             showFallbackMessage(video = null) {
                 this.fallbackMessage.style.display = 'flex';
+                this.videoPlayer.style.display = 'none';
+                this.directVideoPlayer.style.display = 'none';
+                
                 if (video) {
                     this.setupFallbackOptions(video);
                 }
@@ -2562,33 +2856,13 @@
 
                 if (video) {
                     openOriginal.onclick = () => {
-                        let url;
-                        switch (video.type) {
-                            case 'drive':
-                                url = `https://drive.google.com/file/d/${video.videoId}/view?usp=sharing`;
-                                break;
-                            case 'youtube_playlist':
-                                url = `https://www.youtube.com/playlist?list=${video.videoId}`;
-                                break;
-                            case 'youtube':
-                                url = `https://www.youtube.com/watch?v=${video.videoId}`;
-                                break;
-                            default:
-                                url = video.originalUrl || video.url;
-                        }
+                        const url = video.originalUrl || video.url || video.embedUrls[0];
                         window.open(url, '_blank');
                         this.videoManager.showNotification('Opening original video...', 'success');
                     };
 
                     downloadVideo.onclick = () => {
-                        let url;
-                        if (video.type === 'drive') {
-                            url = `https://drive.google.com/uc?export=download&id=${video.videoId}`;
-                        } else if (video.type === 'direct') {
-                            url = video.url;
-                        } else {
-                            url = video.originalUrl || video.url;
-                        }
+                        const url = video.originalUrl || video.url || video.embedUrls[0];
                         window.open(url, '_blank');
                         this.videoManager.showNotification('Starting download...', 'success');
                     };
@@ -2596,7 +2870,7 @@
             }
         }
 
-        // ==================== ENHANCED VIDEO MANAGER ====================
+        // ==================== FIXED VIDEO MANAGER ====================
         class EnhancedVideoManager {
             constructor() {
                 this.allVideos = [];
@@ -2609,31 +2883,66 @@
                 this.recentlyPlayed = [];
                 this.isLoading = false;
                 
+                // Initialize with sample data for testing
+                this.initializeSampleData();
+                
                 this.services = {
-                    airtable: new AirtableService(),
+                    airtable: new AirtableService('patPnJxM2TRWXuka0.087c43bbf8e133080578197ef90fbd4ab5aba7dd7b77194e54fc7a98c5707899'),
                     metadata: new VideoMetadataService()
                 };
                 
                 this.searchService = new SearchService(this.services.airtable);
-                this.cache = new Map();
-                this.searchTimeout = null;
+            }
+
+            initializeSampleData() {
+                // Add sample videos for testing
+                this.allVideos = [
+                    {
+                        id: 'sample-1',
+                        videoId: 'dQw4w9WgXcQ',
+                        title: 'Sample YouTube Video',
+                        description: 'A sample video for testing the player',
+                        type: 'youtube',
+                        duration: '3:45',
+                        url: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+                        embedUrls: ['https://www.youtube.com/embed/dQw4w9WgXcQ'],
+                        thumbnail: 'https://img.youtube.com/vi/dQw4w9WgXcQ/hqdefault.jpg',
+                        createdAt: new Date().toISOString(),
+                        status: 'active',
+                        viewCount: 1000
+                    },
+                    {
+                        id: 'sample-2',
+                        videoId: 'sample-mp4',
+                        title: 'Sample MP4 Video',
+                        description: 'Direct MP4 video file',
+                        type: 'direct',
+                        duration: '2:30',
+                        url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+                        embedUrls: ['https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4'],
+                        thumbnail: '',
+                        createdAt: new Date().toISOString(),
+                        status: 'active',
+                        viewCount: 500
+                    }
+                ];
             }
 
             async loadVideos() {
                 this.isLoading = true;
                 
                 try {
-                    // Try to load from cache first
-                    const cached = this.loadFromStorage(CONFIG.STORAGE.ALL_VIDEOS_KEY);
-                    if (cached && cached.length > 0) {
-                        this.allVideos = cached;
-                        this.showNotification(`Loaded ${this.allVideos.length} videos from cache`, 'success');
+                    // Try to load from Airtable
+                    try {
+                        const freshVideos = await this.services.airtable.getAllVideos();
+                        if (freshVideos && freshVideos.length > 0) {
+                            this.allVideos = freshVideos;
+                            this.showNotification(`Loaded ${this.allVideos.length} videos from cloud`, 'success');
+                        }
+                    } catch (error) {
+                        console.warn('Failed to load from Airtable, using sample data:', error);
+                        // Continue with sample data
                     }
-
-                    // Always refresh from Airtable for latest data
-                    const freshVideos = await this.services.airtable.getAllVideos();
-                    this.allVideos = freshVideos;
-                    this.saveToStorage(CONFIG.STORAGE.ALL_VIDEOS_KEY, this.allVideos);
                     
                     await this.searchService.buildSearchIndex(this.allVideos);
                     
@@ -2642,60 +2951,14 @@
                     
                     this.applyFiltersAndSearch();
                     
-                    if (freshVideos.length > 0) {
-                        this.showNotification(`Synced ${freshVideos.length} videos from cloud`, 'success');
-                    }
-                    
                     return this.allVideos;
                 } catch (error) {
                     console.error('Error loading videos:', error);
-                    // Fallback to sample videos if Airtable fails
-                    this.allVideos = this.getSampleVideos();
-                    this.saveToStorage(CONFIG.STORAGE.ALL_VIDEOS_KEY, this.allVideos);
-                    this.showNotification('Using sample videos - Airtable connection failed', 'warning');
+                    this.showNotification('Using sample videos - ' + error.message, 'warning');
                     return this.allVideos;
                 } finally {
                     this.isLoading = false;
                 }
-            }
-
-            getSampleVideos() {
-                return [
-                    {
-                        id: 'sample-1',
-                        videoId: 'dQw4w9WgXcQ',
-                        title: 'Sample YouTube Video',
-                        description: 'A sample video for demonstration purposes',
-                        type: 'youtube',
-                        duration: '3:45',
-                        url: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
-                        embedUrls: ['https://www.youtube.com/embed/dQw4w9WgXcQ'],
-                        thumbnail: 'https://img.youtube.com/vi/dQw4w9WgXcQ/hqdefault.jpg',
-                        createdAt: new Date().toISOString(),
-                        status: 'active',
-                        viewCount: 1000,
-                        tags: ['sample', 'demo'],
-                        category: 'general',
-                        author: 'System'
-                    },
-                    {
-                        id: 'sample-2',
-                        videoId: '1PnVor36_40',
-                        title: 'Another Sample Video',
-                        description: 'Another sample video for testing',
-                        type: 'youtube',
-                        duration: '5:20',
-                        url: 'https://www.youtube.com/embed/1PnVor36_40',
-                        embedUrls: ['https://www.youtube.com/embed/1PnVor36_40'],
-                        thumbnail: 'https://img.youtube.com/vi/1PnVor36_40/hqdefault.jpg',
-                        createdAt: new Date().toISOString(),
-                        status: 'active',
-                        viewCount: 500,
-                        tags: ['sample', 'test'],
-                        category: 'general',
-                        author: 'System'
-                    }
-                ];
             }
 
             applyFiltersAndSearch() {
@@ -2942,7 +3205,7 @@
                             <div class="video-item-title">${this.highlightSearchTerms(video.title)}</div>
                             <div class="video-item-meta">
                                 <span class="video-duration">${video.duration || '--:--'}</span>
-                                <span>${video.type.charAt(0).toUpperCase() + video.type.slice(1)}</span>
+                                <span>${this.getPlatformDisplayName(video.type)}</span>
                                 ${recentlyPlayed ? '<span class="recent-badge" title="Recently played"><i class="fas fa-history"></i></span>' : ''}
                                 ${popularityScore > 10 ? '<span class="popularity-badge" title="Popular video"><i class="fas fa-fire"></i></span>' : ''}
                                 ${isActive ? '<span class="currently-playing-badge"><i class="fas fa-play"></i> Playing</span>' : ''}
@@ -2950,6 +3213,35 @@
                         </div>
                     </div>
                 `;
+            }
+
+            getPlatformDisplayName(type) {
+                const platformNames = {
+                    'youtube': 'YouTube',
+                    'youtube_playlist': 'YouTube Playlist',
+                    'youtube_live': 'YouTube Live',
+                    'drive': 'Google Drive',
+                    'vimeo': 'Vimeo',
+                    'dailymotion': 'Dailymotion',
+                    'facebook': 'Facebook',
+                    'instagram': 'Instagram',
+                    'tiktok': 'TikTok',
+                    'twitter': 'Twitter/X',
+                    'twitch': 'Twitch',
+                    'streamable': 'Streamable',
+                    'dropbox': 'Dropbox',
+                    'photos': 'Google Photos',
+                    'wistia': 'Wistia',
+                    'loom': 'Loom',
+                    'vidyard': 'Vidyard',
+                    'brightcove': 'Brightcove',
+                    'kaltura': 'Kaltura',
+                    'm3u8': 'HLS Stream',
+                    'direct': 'Direct Video',
+                    'embed': 'Embedded Video',
+                    'other': 'Other'
+                };
+                return platformNames[type] || type.charAt(0).toUpperCase() + type.slice(1);
             }
 
             getEmptyStateHTML() {
@@ -3003,6 +3295,10 @@
                         : `https://img.youtube.com/vi/${video.videoId}/hqdefault.jpg`;
                 } else if (video.type === 'drive') {
                     return `https://drive.google.com/thumbnail?id=${video.videoId}&sz=w400`;
+                } else if (video.type === 'vimeo') {
+                    return `https://vumbnail.com/${video.videoId}.jpg`;
+                } else if (video.type === 'dailymotion') {
+                    return `https://www.dailymotion.com/thumbnail/video/${video.videoId}`;
                 }
                 
                 return 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjcwIiB2aWV3Qm94PSIwIDAgMTAwIDcwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iNzAiIGZpbGw9IiMzMzMiLz48cGF0aCBkPSJNMzUgMzBMNTAgNDVINjVMMzUiIHN0cm9rZT0iIzk5OSIgc3Ryb2tlLXdpZHRoPSIyIi8+PC9zdmc+';
@@ -3046,9 +3342,10 @@
                 }
 
                 try {
+                    // SIMPLIFIED VALIDATION - Just parse the URL
                     const parsed = UniversalVideoParser.parseURL(url);
                     if (!parsed) {
-                        throw new Error('Unsupported video URL format');
+                        throw new Error('Invalid URL format');
                     }
 
                     let videoData = {
@@ -3060,27 +3357,24 @@
                         url: parsed.embedUrls[0],
                         embedUrls: parsed.embedUrls,
                         thumbnail: parsed.thumbnail,
-                        originalUrl: parsed.originalUrl
+                        originalUrl: parsed.originalUrl,
+                        createdAt: new Date().toISOString(),
+                        status: 'active',
+                        viewCount: 0,
+                        tags: [],
+                        category: 'custom',
+                        author: ''
                     };
 
-                    // Try to add to Airtable, but fallback to local storage if it fails
+                    // Try to add to Airtable, but continue even if it fails
                     let createdVideo;
                     try {
                         createdVideo = await this.services.airtable.addVideo(videoData);
                     } catch (error) {
-                        console.warn('Failed to add video to Airtable, using local storage:', error);
-                        createdVideo = {
-                            ...videoData,
-                            id: `local-${Date.now()}`,
-                            createdAt: new Date().toISOString(),
-                            status: 'active',
-                            viewCount: 0,
-                            tags: [],
-                            category: 'custom',
-                            author: 'User'
-                        };
+                        console.warn('Failed to add to Airtable, using local storage:', error);
+                        createdVideo = { ...videoData, id: 'local-' + Date.now() };
                     }
-                    
+
                     // Update local state
                     this.allVideos.push(createdVideo);
                     await this.searchService.buildSearchIndex(this.allVideos);
@@ -3100,48 +3394,29 @@
             }
         }
 
-        // ==================== SUPPORTING SERVICES ====================
+        // ==================== FIXED SUPPORTING SERVICES ====================
         class AirtableService {
-            constructor() {
+            constructor(apiKey) {
+                this.apiKey = apiKey;
                 this.baseUrl = `${CONFIG.AIRTABLE.API_URL}/${CONFIG.AIRTABLE.BASE_ID}/${CONFIG.AIRTABLE.TABLE_NAME}`;
-                this.retryCount = 3;
-                this.retryDelay = 1000;
-                this.cache = new Map();
-            }
-
-            async handleRequest(url, options, retries = this.retryCount) {
-                try {
-                    const response = await fetch(url, options);
-                    if (!response.ok) {
-                        if (response.status === 429 && retries > 0) {
-                            await this.delay(this.retryDelay);
-                            return this.handleRequest(url, options, retries - 1);
-                        }
-                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                    }
-                    return await response.json();
-                } catch (error) {
-                    if (retries > 0) {
-                        await this.delay(this.retryDelay);
-                        return this.handleRequest(url, options, retries - 1);
-                    }
-                    throw error;
-                }
-            }
-
-            delay(ms) {
-                return new Promise(resolve => setTimeout(resolve, ms));
+                this.headers = {
+                    'Authorization': `Bearer ${this.apiKey}`,
+                    'Content-Type': 'application/json'
+                };
             }
 
             async getAllVideos() {
                 try {
-                    const data = await this.handleRequest(this.baseUrl, {
+                    const response = await fetch(this.baseUrl, {
                         method: 'GET',
-                        headers: {
-                            'Authorization': `Bearer patPnJxM2TRWXuka0.087c43bbf8e133080578197ef90fbd4ab5aba7dd7b77194e54fc7a98c5707899`,
-                            'Content-Type': 'application/json'
-                        }
+                        headers: this.headers
                     });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+
+                    const data = await response.json();
 
                     if (!data.records || !Array.isArray(data.records)) {
                         throw new Error('Invalid Airtable response format');
@@ -3193,20 +3468,22 @@
                         }
                     };
 
-                    const data = await this.handleRequest(this.baseUrl, {
+                    const response = await fetch(this.baseUrl, {
                         method: 'POST',
-                        headers: {
-                            'Authorization': `Bearer patPnJxM2TRWXuka0.087c43bbf8e133080578197ef90fbd4ab5aba7dd7b77194e54fc7a98c5707899`,
-                            'Content-Type': 'application/json'
-                        },
+                        headers: this.headers,
                         body: JSON.stringify({ records: [record] })
                     });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+
+                    const data = await response.json();
 
                     if (!data.records || data.records.length === 0) {
                         throw new Error('No record returned from Airtable');
                     }
 
-                    this.clearCache();
                     const createdRecord = data.records[0];
                     return {
                         id: createdRecord.id,
@@ -3230,20 +3507,15 @@
                     throw error;
                 }
             }
-
-            clearCache() {
-                this.cache.clear();
-            }
         }
 
         class VideoMetadataService {
             constructor() {
                 this.cache = new Map();
-                this.cacheTimeout = 24 * 60 * 60 * 1000;
             }
 
             async fetchMetadata(videoData) {
-                // Basic implementation - can be extended for specific platforms
+                // Basic implementation
                 return {
                     title: videoData.title,
                     author: '',
@@ -3313,7 +3585,7 @@
             }
         }
 
-        // ==================== APPLICATION INITIALIZATION ====================
+        // ==================== FIXED APPLICATION INITIALIZATION ====================
         let videoManager;
         let videoPlayerController;
 
@@ -3361,7 +3633,6 @@
                 searchTimeout = setTimeout(() => {
                     videoManager.currentSearchTerm = query;
                     videoManager.applyFiltersAndSearch();
-                    videoManager.showNotification(`Searching for "${query}"`, 'info');
                 }, CONFIG.SEARCH.DEBOUNCE_DELAY);
             });
 
@@ -3369,14 +3640,12 @@
             sortOptions.addEventListener('change', (e) => {
                 videoManager.currentSortOption = e.target.value;
                 videoManager.applyFiltersAndSearch();
-                videoManager.showNotification(`Sorted by: ${e.target.options[e.target.selectedIndex].text}`, 'success');
             });
 
             filterOptions.addEventListener('change', (e) => {
                 videoManager.currentFilters.platform = e.target.value;
                 videoManager.currentPlatform = e.target.value;
                 videoManager.applyFiltersAndSearch();
-                videoManager.showNotification(`Filtered by: ${e.target.value}`, 'success');
             });
 
             // Platform tabs
@@ -3391,7 +3660,6 @@
                     filterOptions.value = platform;
                     
                     videoManager.applyFiltersAndSearch();
-                    videoManager.showNotification(`Showing ${platform} videos`, 'success');
                 });
             });
 
@@ -3400,7 +3668,6 @@
                 videoSearch.value = '';
                 videoManager.currentSearchTerm = '';
                 videoManager.applyFiltersAndSearch();
-                videoManager.showNotification('Search cleared', 'info');
             });
 
             clearAllFilters.addEventListener('click', () => {
@@ -3416,7 +3683,6 @@
                 document.querySelector('.platform-tab[data-platform="all"]').classList.add('active');
                 
                 videoManager.applyFiltersAndSearch();
-                videoManager.showNotification('All filters cleared', 'success');
             });
 
             // Navigation
@@ -3424,7 +3690,6 @@
                 const video = videoManager.prevVideo();
                 if (video) {
                     videoPlayerController.loadVideo(video);
-                    videoManager.showNotification(`Now playing: ${video.title}`, 'success');
                 }
             });
 
@@ -3432,11 +3697,10 @@
                 const video = videoManager.nextVideo();
                 if (video) {
                     videoPlayerController.loadVideo(video);
-                    videoManager.showNotification(`Now playing: ${video.title}`, 'success');
                 }
             });
 
-            // Add custom video
+            // Add custom video - SIMPLIFIED
             addCustomVideoBtn.addEventListener('click', async () => {
                 const url = customVideoUrl.value.trim();
                 if (!url) {
@@ -3475,7 +3739,6 @@
                     const video = videoManager.filteredVideos.find(v => v.id === videoId);
                     if (video) {
                         videoPlayerController.loadVideo(video);
-                        videoManager.showNotification(`Now playing: ${video.title}`, 'success');
                     }
                 }
             });
@@ -3528,41 +3791,11 @@
                 videoPlayerController.loadVideo(firstVideo);
             }
             
-            videoManager.showNotification('Universal Video Player Initialized - All Platforms Supported!', 'success');
+            videoManager.showNotification('Universal Video Player Ready - Supports ANY Video URL!', 'success');
         }
 
         // Initialize when page loads
         window.addEventListener('load', init);
-
-        // Global functions for HTML onclick handlers
-        window.removeFilter = function(type) {
-            if (type === 'search') {
-                document.getElementById('videoSearch').value = '';
-                videoManager.currentSearchTerm = '';
-            } else if (type === 'platform') {
-                document.getElementById('filterOptions').value = 'all';
-                videoManager.currentFilters.platform = 'all';
-                videoManager.currentPlatform = 'all';
-            }
-            videoManager.applyFiltersAndSearch();
-        };
-
-        window.clearAllFiltersAndSearch = function() {
-            document.getElementById('clearAllFilters').click();
-        };
-
-        // API Key Configuration
-        window.setAirtableApiKey = function(apiKey) {
-            if (apiKey && apiKey.startsWith('pat')) {
-                videoManager.services.airtable = new AirtableService(apiKey);
-                videoManager.searchService = new SearchService(videoManager.services.airtable);
-                videoManager.showNotification('Airtable API key configured successfully', 'success');
-                return true;
-            } else {
-                videoManager.showNotification('Invalid Airtable API key format', 'error');
-                return false;
-            }
-        };
     </script>
 </body>
 
