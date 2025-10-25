@@ -2171,51 +2171,84 @@
             }
         }
 
-        // Professional Video URL Parser
+        // Enhanced Video URL Parser - Supports All Major Platforms
         class VideoURLParser {
             static parseYouTube(url) {
                 const patterns = [
-                    /(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&]+)/,
-                    /youtube\.com\/embed\/([^?]+)/,
-                    /youtube\.com\/v\/([^?]+)/
+                    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/v\/|youtube\.com\/shorts\/|youtube\.com\/live\/|music\.youtube\.com\/watch\?v=)([^&?\/#]+)/,
+                    /youtube\.com\/playlist\?list=([^&?\/#]+)/
                 ];
 
                 for (const pattern of patterns) {
                     const match = url.match(pattern);
-                    if (match) return {
-                        id: match[1],
-                        type: 'youtube',
-                        thumbnail: `https://img.youtube.com/vi/${match[1]}/hqdefault.jpg`,
-                        embedUrl: `https://www.youtube.com/embed/${match[1]}`
-                    };
+                    if (match) {
+                        const videoId = match[1];
+                        if (url.includes('playlist')) {
+                            return {
+                                id: `playlist-${videoId}`,
+                                type: 'youtube_playlist',
+                                embedUrl: `https://www.youtube.com/embed/videoseries?list=${videoId}`,
+                                thumbnail: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjcwIiB2aWV3Qm94PSIwIDAgMTAwIDcwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iNzAiIGZpbGw9IiNmMTBhMGIiLz48dGV4dCB4PSI1MCIgeT0iMzUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxMCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPllvdVR1YmUgUGxheWxpc3Q8L3RleHQ+PC9zdmc+',
+                                title: 'YouTube Playlist'
+                            };
+                        } else {
+                            return {
+                                id: videoId,
+                                type: 'youtube',
+                                embedUrl: `https://www.youtube.com/embed/${videoId}`,
+                                thumbnail: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
+                                title: 'YouTube Video'
+                            };
+                        }
+                    }
                 }
-
-                const playlistMatch = url.match(/youtube\.com\/playlist\?list=([^&]+)/);
-                if (playlistMatch) return {
-                    id: playlistMatch[1],
-                    type: 'youtube_playlist',
-                    embedUrl: `https://www.youtube.com/embed/videoseries?list=${playlistMatch[1]}`
-                };
-
                 return null;
             }
 
             static parseGoogleDrive(url) {
                 const patterns = [
                     /drive\.google\.com\/file\/d\/([^\/]+)/,
-                    /drive\.google\.com\/open\?id=([^&]+)/
+                    /drive\.google\.com\/open\?id=([^&]+)/,
+                    /drive\.google\.com\/uc\?id=([^&]+)/,
+                    /drive\.google\.com\/uc\?export=download&id=([^&]+)/
                 ];
 
                 for (const pattern of patterns) {
                     const match = url.match(pattern);
-                    if (match) return { id: match[1], type: 'drive' };
+                    if (match) {
+                        const fileId = match[1];
+                        return {
+                            id: fileId,
+                            type: 'drive',
+                            embedUrl: `https://drive.google.com/file/d/${fileId}/preview`,
+                            thumbnail: `https://drive.google.com/thumbnail?id=${fileId}&sz=w400`,
+                            title: 'Google Drive Video'
+                        };
+                    }
                 }
                 return null;
             }
 
             static parseVimeo(url) {
-                const match = url.match(/vimeo\.com\/(\d+)/);
-                return match ? { id: match[1], type: 'vimeo' } : null;
+                const patterns = [
+                    /vimeo\.com\/(\d+)/,
+                    /player\.vimeo\.com\/video\/(\d+)/
+                ];
+
+                for (const pattern of patterns) {
+                    const match = url.match(pattern);
+                    if (match) {
+                        const videoId = match[1];
+                        return {
+                            id: videoId,
+                            type: 'vimeo',
+                            embedUrl: `https://player.vimeo.com/video/${videoId}`,
+                            thumbnail: `https://vumbnail.com/${videoId}.jpg`,
+                            title: 'Vimeo Video'
+                        };
+                    }
+                }
+                return null;
             }
 
             static parseDailymotion(url) {
@@ -2226,14 +2259,213 @@
 
                 for (const pattern of patterns) {
                     const match = url.match(pattern);
-                    if (match) return { id: match[1], type: 'dailymotion' };
+                    if (match) {
+                        const videoId = match[1];
+                        return {
+                            id: videoId,
+                            type: 'dailymotion',
+                            embedUrl: `https://www.dailymotion.com/embed/video/${videoId}`,
+                            thumbnail: `https://www.dailymotion.com/thumbnail/video/${videoId}`,
+                            title: 'Dailymotion Video'
+                        };
+                    }
+                }
+                return null;
+            }
+
+            static parseFacebook(url) {
+                const patterns = [
+                    /facebook\.com\/([^\/]+)\/videos\/(\d+)/,
+                    /fb\.watch\/([^\/]+)/
+                ];
+
+                for (const pattern of patterns) {
+                    const match = url.match(pattern);
+                    if (match) {
+                        const videoId = match[2] || match[1];
+                        return {
+                            id: videoId,
+                            type: 'facebook',
+                            embedUrl: `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(url)}`,
+                            thumbnail: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjcwIiB2aWV3Qm94PSIwIDAgMTAwIDcwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iNzAiIGZpbGw9IiMzYjU5OTgiLz48dGV4dCB4PSI1MCIgeT0iMzUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSI4IiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+RmFjZWJvb2sgVmlkZW88L3RleHQ+PC9zdmc+',
+                            title: 'Facebook Video'
+                        };
+                    }
+                }
+                return null;
+            }
+
+            static parseInstagram(url) {
+                const patterns = [
+                    /instagram\.com\/(?:p|reel|tv)\/([^\/]+)/
+                ];
+
+                for (const pattern of patterns) {
+                    const match = url.match(pattern);
+                    if (match) {
+                        const code = match[1];
+                        return {
+                            id: code,
+                            type: 'instagram',
+                            embedUrl: `https://www.instagram.com/p/${code}/embed/`,
+                            thumbnail: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjcwIiB2aWV3Qm94PSIwIDAgMTAwIDcwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iNzAiIGZpbGw9InVybCgjZ3JhZGllbnQpIi8+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJncmFkaWVudCIgeDE9IjAlIiB5MT0iMCUiIHgyPSIxMDAlIiB5Mj0iMTAwJSI+PHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0iI2YwOTQ0MyIvPjxzdG9wIG9mZnNldD0iMTAwJSIgc3RvcC1jb2xvcj0iI2UxMzA2NyIvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjx0ZXh0IHg9IjUwIiB5PSIzNSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjgiIGZpbGw9IndoaXRlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5JbnN0YWdyYW08L3RleHQ+PC9zdmc+',
+                            title: 'Instagram Video'
+                        };
+                    }
+                }
+                return null;
+            }
+
+            static parseTikTok(url) {
+                const patterns = [
+                    /tiktok\.com\/@([^\/]+)\/video\/(\d+)/,
+                    /vm\.tiktok\.com\/([^\/]+)/
+                ];
+
+                for (const pattern of patterns) {
+                    const match = url.match(pattern);
+                    if (match) {
+                        const videoId = match[2] || match[1];
+                        return {
+                            id: videoId,
+                            type: 'tiktok',
+                            embedUrl: `https://www.tiktok.com/embed/v2/${videoId}`,
+                            thumbnail: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjcwIiB2aWV3Qm94PSIwIDAgMTAwIDcwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iNzAiIGZpbGw9IiMwMDAiLz48dGV4dCB4PSI1MCIgeT0iMzUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSI4IiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+VGlrVG9rPC90ZXh0Pjwvc3ZnPg==',
+                            title: 'TikTok Video'
+                        };
+                    }
+                }
+                return null;
+            }
+
+            static parseTwitter(url) {
+                const patterns = [
+                    /(?:twitter\.com|x\.com)\/([^\/]+)\/status\/(\d+)/
+                ];
+
+                for (const pattern of patterns) {
+                    const match = url.match(pattern);
+                    if (match) {
+                        const tweetId = match[2];
+                        return {
+                            id: tweetId,
+                            type: 'twitter',
+                            embedUrl: `https://twitframe.com/show?url=${encodeURIComponent(url)}`,
+                            thumbnail: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjcwIiB2aWV3Qm94PSIwIDAgMTAwIDcwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iNzAiIGZpbGw9IiMxZGE5ZWQiLz48dGV4dCB4PSI1MCIgeT0iMzUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSI4IiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+VHdpdHRlcjwvdGV4dD48L3N2Zz4=',
+                            title: 'Twitter Video'
+                        };
+                    }
+                }
+                return null;
+            }
+
+            static parseTwitch(url) {
+                const patterns = [
+                    /twitch\.tv\/videos\/(\d+)/,
+                    /twitch\.tv\/([^\/]+)\/clip\/([^\/]+)/
+                ];
+
+                for (const pattern of patterns) {
+                    const match = url.match(pattern);
+                    if (match) {
+                        if (url.includes('/clip/')) {
+                            return {
+                                id: match[2],
+                                type: 'twitch',
+                                embedUrl: `https://clips.twitch.tv/embed?clip=${match[2]}`,
+                                thumbnail: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjcwIiB2aWV3Qm94PSIwIDAgMTAwIDcwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iNzAiIGZpbGw9IiM2NDE0N2UiLz48dGV4dCB4PSI1MCIgeT0iMzUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSI4IiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+VHdpdGNoIENsaXA8L3RleHQ+PC9zdmc+',
+                                title: 'Twitch Clip'
+                            };
+                        } else {
+                            return {
+                                id: match[1],
+                                type: 'twitch',
+                                embedUrl: `https://player.twitch.tv/?video=${match[1]}`,
+                                thumbnail: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjcwIiB2aWV3Qm94PSIwIDAgMTAwIDcwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iNzAiIGZpbGw9IiM2NDE0N2UiLz48dGV4dCB4PSI1MCIgeT0iMzUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSI4IiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+VHdpdGNoIFZpZGVvPC90ZXh0Pjwvc3ZnPg==',
+                                title: 'Twitch Video'
+                            };
+                        }
+                    }
+                }
+                return null;
+            }
+
+            static parseStreamable(url) {
+                const patterns = [
+                    /streamable\.com\/([^\/?]+)/
+                ];
+
+                for (const pattern of patterns) {
+                    const match = url.match(pattern);
+                    if (match) {
+                        const videoId = match[1];
+                        return {
+                            id: videoId,
+                            type: 'streamable',
+                            embedUrl: `https://streamable.com/e/${videoId}`,
+                            thumbnail: `https://cdn-cf-east.streamable.com/image/${videoId}.jpg`,
+                            title: 'Streamable Video'
+                        };
+                    }
+                }
+                return null;
+            }
+
+            static parseDropbox(url) {
+                const patterns = [
+                    /dropbox\.com\/s\/([^\/]+)\/([^?]+)\?dl=0/
+                ];
+
+                for (const pattern of patterns) {
+                    const match = url.match(pattern);
+                    if (match) {
+                        const fileId = match[1];
+                        const filename = match[2];
+                        return {
+                            id: fileId,
+                            type: 'dropbox',
+                            embedUrl: url.replace('?dl=0', '?raw=1'),
+                            thumbnail: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjcwIiB2aWV3Qm94PSIwIDAgMTAwIDcwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iNzAiIGZpbGw9IiMwMDdiZWUiLz48dGV4dCB4PSI1MCIgeT0iMzUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSI4IiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+RHJvcGJveDwvdGV4dD48L3N2Zz4=',
+                            title: 'Dropbox Video'
+                        };
+                    }
+                }
+                return null;
+            }
+
+            static parseGooglePhotos(url) {
+                const patterns = [
+                    /photos\.app\.goo\.gl\/([^\/]+)/
+                ];
+
+                for (const pattern of patterns) {
+                    const match = url.match(pattern);
+                    if (match) {
+                        const photoId = match[1];
+                        return {
+                            id: photoId,
+                            type: 'google_photos',
+                            embedUrl: url,
+                            thumbnail: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjcwIiB2aWV3Qm94PSIwIDAgMTAwIDcwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iNzAiIGZpbGw9IiMzNGE4NTMiLz48dGV4dCB4PSI1MCIgeT0iMzUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSI4IiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+R29vZ2xlIFBob3RvczwvdGV4dD48L3N2Zz4=',
+                            title: 'Google Photos'
+                        };
+                    }
                 }
                 return null;
             }
 
             static parseDirectVideo(url) {
-                const videoExtensions = /\.(mp4|webm|ogg|mov|avi|wmv|flv|mkv)(\?.*)?$/i;
-                return videoExtensions.test(url) ? { id: `direct-${Date.now()}`, type: 'direct' } : null;
+                const videoExtensions = /\.(mp4|webm|mov|avi|mkv|flv|ogg|wmv|m4v|3gp|ogv)(\?.*)?$/i;
+                if (videoExtensions.test(url)) {
+                    return {
+                        id: `direct-${Date.now()}`,
+                        type: 'direct',
+                        embedUrl: url,
+                        thumbnail: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjcwIiB2aWV3Qm94PSIwIDAgMTAwIDcwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iNzAiIGZpbGw9IiMzMzMiLz48cGF0aCBkPSJNMzUgMzBMNTAgNDVINjVMMzUiIHN0cm9rZT0iIzk5OSIgc3Ryb2tlLXdpZHRoPSIyIi8+PC9zdmc+',
+                        title: 'Direct Video File'
+                    };
+                }
+                return null;
             }
 
             static parseURL(url) {
@@ -2242,16 +2474,43 @@
                     this.parseGoogleDrive,
                     this.parseVimeo,
                     this.parseDailymotion,
+                    this.parseFacebook,
+                    this.parseInstagram,
+                    this.parseTikTok,
+                    this.parseTwitter,
+                    this.parseTwitch,
+                    this.parseStreamable,
+                    this.parseDropbox,
+                    this.parseGooglePhotos,
                     this.parseDirectVideo
                 ];
 
                 for (const parser of parsers) {
                     const result = parser.call(this, url);
-                    if (result) return result;
+                    if (result) {
+                        return {
+                            videoId: result.id,
+                            type: result.type,
+                            embedUrl: result.embedUrl,
+                            originalUrl: url,
+                            thumbnail: result.thumbnail,
+                            title: result.title,
+                            description: `Video from ${result.type}`
+                        };
+                    }
                 }
 
-                // Generic URL fallback
-                return { id: `custom-${Date.now()}`, type: 'other' };
+                // Fallback for unknown URLs
+                const defaultSVG = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjcwIiB2aWV3Qm94PSIwIDAgMTAwIDcwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iNzAiIGZpbGw9IiMzMzMiLz48Y2lyY2xlIGN4PSI1MCIgY3k9IjM1IiByPSIyMCIgZmlsbD0iIzY2NiIvPjxwYXRoIGQ9Ik00MCAzNUw1NSA0NUw2NSAzNSIgc3Ryb2tlPSIjOTk5IiBzdHJva2Utd2lkdGg9IjMiLz48L3N2Zz4=';
+                return {
+                    videoId: `other-${Date.now()}`,
+                    type: 'other',
+                    embedUrl: url,
+                    originalUrl: url,
+                    thumbnail: defaultSVG,
+                    title: 'Custom Video',
+                    description: 'Video from unknown source'
+                };
             }
         }
 
@@ -2900,57 +3159,31 @@
             addCustomVideoBtn.disabled = true;
 
             try {
-                // Parse URL
+                // Parse URL using the enhanced VideoURLParser
                 const parsed = VideoURLParser.parseURL(url);
                 if (!parsed) {
                     throw new Error('Unsupported video URL format');
                 }
 
                 let videoData = {
-                    id: parsed.id,
-                    title: 'Custom Video',
-                    description: 'Custom added video',
+                    id: parsed.videoId,
+                    title: parsed.title,
+                    description: parsed.description,
                     type: parsed.type,
                     duration: '--:--',
-                    url: url,
-                    thumbnail: null
+                    url: parsed.embedUrl,
+                    thumbnail: parsed.thumbnail
                 };
 
                 // Fetch additional data for YouTube videos
-                if (parsed.type === 'youtube') {
-                    const youtubeData = await youtubeService.getVideoData(parsed.id);
+                if (parsed.type === 'youtube' && !parsed.type.includes('playlist')) {
+                    const youtubeData = await youtubeService.getVideoData(parsed.videoId);
                     if (youtubeData) {
                         videoData.title = youtubeData.title;
                         videoData.description = youtubeData.description;
                         videoData.thumbnail = youtubeData.thumbnail;
                         videoData.duration = youtubeData.duration;
                     }
-                }
-
-                // Generate embed URL
-                switch (parsed.type) {
-                    case "youtube":
-                        videoData.url = `https://www.youtube.com/embed/${parsed.id}`;
-                        break;
-                    case "youtube_playlist":
-                        videoData.url = `https://www.youtube.com/embed/videoseries?list=${parsed.id}`;
-                        videoData.title = "YouTube Playlist";
-                        break;
-                    case "drive":
-                        // Try both preview and embed URLs for better compatibility
-                        const driveId = parsed.id;
-                        videoData.url = `https://drive.google.com/file/d/${driveId}/preview`;
-                        videoData.alternateUrl = `https://drive.google.com/uc?id=${driveId}`;
-                        videoData.title = "Google Drive Video";
-                        break;
-                    case "vimeo":
-                        videoData.url = `https://player.vimeo.com/video/${parsed.id}`;
-                        videoData.title = "Vimeo Video";
-                        break;
-                    case "dailymotion":
-                        videoData.url = `https://www.dailymotion.com/embed/video/${parsed.id}`;
-                        videoData.title = "Dailymotion Video";
-                        break;
                 }
 
                 console.log('Adding custom video:', videoData);
@@ -3035,7 +3268,7 @@
                     } else if (video.type === 'drive') {
                         thumbUrl = `https://drive.google.com/thumbnail?id=${video.videoId}&sz=w400`;
                     } else {
-                        thumbUrl = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjcwIiB2aWV3Qm94PSIwIDAgMTAwIDcwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iNzAiIGZpbGw9IiMzMzMiLz48cGF0aCBkPSJNMzUgMzBMNTAgNDVINjVMMzUiIHN0cm9rZT0iIzk5OSIgc3Ryb2tlLXdpZHRoPSIyIi8+PC9zdmc+';
+                        thumbUrl = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjcwIiB2aWV3Qm94PSIwIDAgMTAwIDcwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMj000MC9zdmciPjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iNzAiIGZpbGw9IiMzMzMiLz48cGF0aCBkPSJNMzUgMzBMNTAgNDVINjVMMzUiIHN0cm9rZT0iIzk5OSIgc3Ryb2tlLXdpZHRoPSIyIi8+PC9zdmc+';
                     }
                 }
 
