@@ -1994,7 +1994,896 @@
             }
         };
 
-        // ==================== PROFESSIONAL VIDEO MANAGER CLASS ====================
+        // ==================== ENHANCED VIDEO URL PARSER ====================
+        class VideoURLParser {
+            static parseURL(url) {
+                if (!url) return null;
+                
+                // Try each platform parser in order
+                const parsers = [
+                    this.parseYouTube,
+                    this.parseGoogleDrive,
+                    this.parseVimeo,
+                    this.parseDailymotion,
+                    this.parseFacebook,
+                    this.parseInstagram,
+                    this.parseTikTok,
+                    this.parseTwitter,
+                    this.parseTwitch,
+                    this.parseStreamable,
+                    this.parseDropbox,
+                    this.parseGooglePhotos,
+                    this.parseDirectVideo
+                ];
+                
+                for (const parser of parsers) {
+                    const result = parser(url);
+                    if (result) {
+                        return {
+                            ...result,
+                            originalUrl: url
+                        };
+                    }
+                }
+                
+                // Fallback for unknown URLs
+                return this.parseUnknown(url);
+            }
+
+            static parseYouTube(url) {
+                const patterns = [
+                    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/v\/|youtube\.com\/shorts\/)([^&?\/#]+)/,
+                    /youtube\.com\/playlist\?list=([^&?\/#]+)/,
+                    /music\.youtube\.com\/watch\?v=([^&?\/#]+)/
+                ];
+
+                for (const pattern of patterns) {
+                    const match = url.match(pattern);
+                    if (match) {
+                        const videoId = match[1];
+                        if (url.includes('playlist')) {
+                            return {
+                                videoId: `playlist-${videoId}`,
+                                type: 'youtube_playlist',
+                                embedUrl: `https://www.youtube.com/embed/videoseries?list=${videoId}&autoplay=1&modestbranding=1&rel=0&playsinline=1`,
+                                thumbnail: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjcwIiB2aWV3Qm94PSIwIDAgMTAwIDcwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iNzAiIGZpbGw9IiNmMTBhMGIiLz48dGV4dCB4PSI1MCIgeT0iMzUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxMCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPllvdVR1YmUgUGxheWxpc3Q8L3RleHQ+PC9zdmc+',
+                                title: 'YouTube Playlist',
+                                description: 'YouTube Playlist'
+                            };
+                        } else {
+                            const embedUrls = [
+                                `https://www.youtube.com/embed/${videoId}?autoplay=1&modestbranding=1&rel=0&playsinline=1&origin=${encodeURIComponent(window.location.origin)}`,
+                                `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&modestbranding=1&rel=0&playsinline=1`,
+                                `https://www.youtube.com/embed/${videoId}?autoplay=1&origin=*`
+                            ];
+                            return {
+                                videoId: videoId,
+                                type: 'youtube',
+                                embedUrl: embedUrls[0],
+                                fallbackUrls: embedUrls.slice(1),
+                                thumbnail: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
+                                title: 'YouTube Video',
+                                description: 'YouTube Video'
+                            };
+                        }
+                    }
+                }
+                return null;
+            }
+
+            static parseGoogleDrive(url) {
+                const patterns = [
+                    /drive\.google\.com\/file\/d\/([^\/]+)/,
+                    /drive\.google\.com\/open\?id=([^&]+)/,
+                    /drive\.google\.com\/uc\?id=([^&]+)/,
+                    /drive\.google\.com\/uc\?export=download&id=([^&]+)/
+                ];
+
+                for (const pattern of patterns) {
+                    const match = url.match(pattern);
+                    if (match) {
+                        const fileId = match[1];
+                        return {
+                            videoId: fileId,
+                            type: 'drive',
+                            embedUrl: `https://drive.google.com/file/d/${fileId}/preview`,
+                            thumbnail: `https://drive.google.com/thumbnail?id=${fileId}&sz=w400`,
+                            title: 'Google Drive Video',
+                            description: 'Google Drive Video'
+                        };
+                    }
+                }
+                return null;
+            }
+
+            static parseVimeo(url) {
+                const patterns = [
+                    /vimeo\.com\/(\d+)/,
+                    /player\.vimeo\.com\/video\/(\d+)/
+                ];
+
+                for (const pattern of patterns) {
+                    const match = url.match(pattern);
+                    if (match) {
+                        const videoId = match[1];
+                        return {
+                            videoId: videoId,
+                            type: 'vimeo',
+                            embedUrl: `https://player.vimeo.com/video/${videoId}?autoplay=1&title=0&byline=0&portrait=0`,
+                            thumbnail: `https://vumbnail.com/${videoId}.jpg`,
+                            title: 'Vimeo Video',
+                            description: 'Vimeo Video'
+                        };
+                    }
+                }
+                return null;
+            }
+
+            static parseDailymotion(url) {
+                const patterns = [
+                    /dailymotion\.com\/video\/([^_]+)/,
+                    /dailymotion\.com\/embed\/video\/([^?]+)/,
+                    /dai\.ly\/([^?]+)/
+                ];
+
+                for (const pattern of patterns) {
+                    const match = url.match(pattern);
+                    if (match) {
+                        const videoId = match[1];
+                        return {
+                            videoId: videoId,
+                            type: 'dailymotion',
+                            embedUrl: `https://www.dailymotion.com/embed/video/${videoId}?autoplay=1`,
+                            thumbnail: `https://www.dailymotion.com/thumbnail/video/${videoId}`,
+                            title: 'Dailymotion Video',
+                            description: 'Dailymotion Video'
+                        };
+                    }
+                }
+                return null;
+            }
+
+            static parseFacebook(url) {
+                if (url.includes('facebook.com') || url.includes('fb.watch')) {
+                    return {
+                        videoId: btoa(url).replace(/=/g, ''),
+                        type: 'facebook',
+                        embedUrl: `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(url)}&show_text=0&autoplay=1`,
+                        thumbnail: '',
+                        title: 'Facebook Video',
+                        description: 'Facebook Video'
+                    };
+                }
+                return null;
+            }
+
+            static parseInstagram(url) {
+                const patterns = [
+                    /instagram\.com\/(?:p|reel|tv)\/([^\/?]+)/,
+                    /instagram\.com\/p\/([^\/?]+)\/embed/
+                ];
+
+                for (const pattern of patterns) {
+                    const match = url.match(pattern);
+                    if (match) {
+                        const code = match[1];
+                        return {
+                            videoId: code,
+                            type: 'instagram',
+                            embedUrl: `https://www.instagram.com/p/${code}/embed/`,
+                            fallbackUrls: [`https://www.instagram.com/reel/${code}/embed/`],
+                            thumbnail: '',
+                            title: 'Instagram Video',
+                            description: 'Instagram Video'
+                        };
+                    }
+                }
+                return null;
+            }
+
+            static parseTikTok(url) {
+                if (url.includes('tiktok.com')) {
+                    const videoId = url.split('/').pop().split('?')[0];
+                    return {
+                        videoId: videoId,
+                        type: 'tiktok',
+                        embedUrl: `https://www.tiktok.com/embed/v2/${videoId}`,
+                        fallbackUrls: [`https://www.tiktok.com/embed/${videoId}`],
+                        thumbnail: '',
+                        title: 'TikTok Video',
+                        description: 'TikTok Video'
+                    };
+                }
+                return null;
+            }
+
+            static parseTwitter(url) {
+                if (url.includes('twitter.com') || url.includes('x.com')) {
+                    return {
+                        videoId: btoa(url).replace(/=/g, ''),
+                        type: 'twitter',
+                        embedUrl: `https://twitframe.com/show?url=${encodeURIComponent(url)}`,
+                        thumbnail: '',
+                        title: 'Twitter/X Video',
+                        description: 'Twitter/X Video'
+                    };
+                }
+                return null;
+            }
+
+            static parseTwitch(url) {
+                const videoPattern = /twitch\.tv\/videos\/(\d+)/;
+                const clipPattern = /twitch\.tv\/(?:\w+)\/clip\/([^?]+)/;
+                
+                const videoMatch = url.match(videoPattern);
+                if (videoMatch) {
+                    return {
+                        videoId: videoMatch[1],
+                        type: 'twitch',
+                        embedUrl: `https://player.twitch.tv/?video=${videoMatch[1]}&parent=${window.location.hostname}&autoplay=true`,
+                        thumbnail: '',
+                        title: 'Twitch Video',
+                        description: 'Twitch Video'
+                    };
+                }
+                
+                const clipMatch = url.match(clipPattern);
+                if (clipMatch) {
+                    return {
+                        videoId: clipMatch[1],
+                        type: 'twitch',
+                        embedUrl: `https://clips.twitch.tv/embed?clip=${clipMatch[1]}&parent=${window.location.hostname}&autoplay=true`,
+                        thumbnail: '',
+                        title: 'Twitch Clip',
+                        description: 'Twitch Clip'
+                    };
+                }
+                
+                return null;
+            }
+
+            static parseStreamable(url) {
+                const pattern = /streamable\.com\/([^?]+)/;
+                const match = url.match(pattern);
+                if (match) {
+                    return {
+                        videoId: match[1],
+                        type: 'streamable',
+                        embedUrl: `https://streamable.com/e/${match[1]}?autoplay=1`,
+                        thumbnail: '',
+                        title: 'Streamable Video',
+                        description: 'Streamable Video'
+                    };
+                }
+                return null;
+            }
+
+            static parseDropbox(url) {
+                const pattern = /dropbox\.com\/s\/([^\/]+)\/([^?]+)/;
+                const match = url.match(pattern);
+                if (match) {
+                    return {
+                        videoId: match[1],
+                        type: 'dropbox',
+                        embedUrl: `https://www.dropbox.com/s/${match[1]}/${match[2]}?raw=1`,
+                        thumbnail: '',
+                        title: 'Dropbox Video',
+                        description: 'Dropbox Video'
+                    };
+                }
+                return null;
+            }
+
+            static parseGooglePhotos(url) {
+                if (url.includes('photos.app.goo.gl') || url.includes('photos.google.com')) {
+                    return {
+                        videoId: btoa(url).replace(/=/g, ''),
+                        type: 'photos',
+                        embedUrl: url,
+                        thumbnail: '',
+                        title: 'Google Photos',
+                        description: 'Google Photos'
+                    };
+                }
+                return null;
+            }
+
+            static parseDirectVideo(url) {
+                const videoExtensions = ['.mp4', '.webm', '.ogg', '.mov', '.mkv', '.flv', '.avi'];
+                const isVideo = videoExtensions.some(ext => url.toLowerCase().includes(ext));
+                
+                if (isVideo) {
+                    return {
+                        videoId: btoa(url).replace(/=/g, ''),
+                        type: 'direct',
+                        embedUrl: url,
+                        thumbnail: '',
+                        title: 'Direct Video',
+                        description: 'Direct Video File'
+                    };
+                }
+                return null;
+            }
+
+            static parseUnknown(url) {
+                return {
+                    videoId: btoa(url).replace(/=/g, ''),
+                    type: 'other',
+                    embedUrl: url,
+                    thumbnail: '',
+                    title: 'Custom Video',
+                    description: 'Video from unknown source'
+                };
+            }
+        }
+
+        // ==================== ENHANCED VIDEO METADATA SERVICE ====================
+        class VideoMetadataService {
+            constructor() {
+                this.cache = new Map();
+                this.cacheTimeout = 24 * 60 * 60 * 1000; // 24 hours
+            }
+
+            async fetchMetadata(videoData) {
+                const cacheKey = `metadata_${videoData.videoId}_${videoData.type}`;
+                const cached = this.getCachedMetadata(cacheKey);
+                if (cached) return cached;
+
+                try {
+                    let metadata = {
+                        title: videoData.title,
+                        author: '',
+                        duration: '',
+                        thumbnail: videoData.thumbnail,
+                        description: videoData.description,
+                        publishDate: ''
+                    };
+
+                    switch (videoData.type) {
+                        case 'youtube':
+                            metadata = await this.fetchYouTubeMetadata(videoData);
+                            break;
+                        case 'vimeo':
+                            metadata = await this.fetchVimeoMetadata(videoData);
+                            break;
+                        case 'dailymotion':
+                            metadata = await this.fetchDailymotionMetadata(videoData);
+                            break;
+                        case 'facebook':
+                            metadata = await this.fetchFacebookMetadata(videoData);
+                            break;
+                        case 'instagram':
+                            metadata = await this.fetchInstagramMetadata(videoData);
+                            break;
+                        case 'tiktok':
+                            metadata = await this.fetchTikTokMetadata(videoData);
+                            break;
+                        case 'twitter':
+                            metadata = await this.fetchTwitterMetadata(videoData);
+                            break;
+                        default:
+                            // For other platforms, use basic metadata
+                            metadata = await this.getBasicMetadata(videoData);
+                    }
+
+                    this.setCachedMetadata(cacheKey, metadata);
+                    return metadata;
+                } catch (error) {
+                    console.error(`Error fetching metadata for ${videoData.type}:`, error);
+                    return this.getBasicMetadata(videoData);
+                }
+            }
+
+            async fetchYouTubeMetadata(videoData) {
+                try {
+                    // Try oEmbed first
+                    const response = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoData.videoId}&format=json`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        return {
+                            title: data.title,
+                            author: data.author_name,
+                            duration: '',
+                            thumbnail: data.thumbnail_url,
+                            description: '',
+                            publishDate: ''
+                        };
+                    }
+                } catch (error) {
+                    console.log('YouTube oEmbed failed, using fallback');
+                }
+
+                // Fallback to basic data
+                return {
+                    title: videoData.title,
+                    author: 'YouTube Creator',
+                    duration: '',
+                    thumbnail: videoData.thumbnail,
+                    description: 'YouTube video - watch on YouTube for full details',
+                    publishDate: ''
+                };
+            }
+
+            async fetchVimeoMetadata(videoData) {
+                try {
+                    const response = await fetch(`https://vimeo.com/api/oembed.json?url=https://vimeo.com/${videoData.videoId}`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        return {
+                            title: data.title,
+                            author: data.author_name,
+                            duration: this.formatDuration(data.duration),
+                            thumbnail: data.thumbnail_url,
+                            description: data.description || '',
+                            publishDate: data.upload_date || ''
+                        };
+                    }
+                } catch (error) {
+                    console.log('Vimeo oEmbed failed, using fallback');
+                }
+
+                return {
+                    title: videoData.title,
+                    author: 'Vimeo Creator',
+                    duration: '',
+                    thumbnail: videoData.thumbnail,
+                    description: 'Vimeo video',
+                    publishDate: ''
+                };
+            }
+
+            async fetchDailymotionMetadata(videoData) {
+                try {
+                    const response = await fetch(`https://www.dailymotion.com/services/oembed?url=https://www.dailymotion.com/video/${videoData.videoId}`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        return {
+                            title: data.title,
+                            author: data.author_name,
+                            duration: '',
+                            thumbnail: data.thumbnail_url,
+                            description: '',
+                            publishDate: ''
+                        };
+                    }
+                } catch (error) {
+                    console.log('Dailymotion oEmbed failed, using fallback');
+                }
+
+                return {
+                    title: videoData.title,
+                    author: 'Dailymotion Creator',
+                    duration: '',
+                    thumbnail: videoData.thumbnail,
+                    description: 'Dailymotion video',
+                    publishDate: ''
+                };
+            }
+
+            async fetchFacebookMetadata(videoData) {
+                try {
+                    const response = await fetch(`https://www.facebook.com/plugins/video/oembed.json/?url=${encodeURIComponent(videoData.originalUrl)}`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        return {
+                            title: data.title || 'Facebook Video',
+                            author: data.author_name || '',
+                            duration: '',
+                            thumbnail: data.thumbnail_url || '',
+                            description: '',
+                            publishDate: ''
+                        };
+                    }
+                } catch (error) {
+                    console.log('Facebook oEmbed failed, using fallback');
+                }
+
+                return {
+                    title: 'Facebook Video',
+                    author: '',
+                    duration: '',
+                    thumbnail: '',
+                    description: 'Facebook video',
+                    publishDate: ''
+                };
+            }
+
+            async fetchInstagramMetadata(videoData) {
+                try {
+                    const response = await fetch(`https://graph.facebook.com/v17.0/instagram_oembed?url=${encodeURIComponent(videoData.originalUrl)}&access_token=`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        return {
+                            title: data.title || 'Instagram Video',
+                            author: data.author_name || '',
+                            duration: '',
+                            thumbnail: data.thumbnail_url || '',
+                            description: '',
+                            publishDate: ''
+                        };
+                    }
+                } catch (error) {
+                    console.log('Instagram oEmbed failed, using fallback');
+                }
+
+                return {
+                    title: 'Instagram Video',
+                    author: '',
+                    duration: '',
+                    thumbnail: '',
+                    description: 'Instagram video',
+                    publishDate: ''
+                };
+            }
+
+            async fetchTikTokMetadata(videoData) {
+                try {
+                    const response = await fetch(`https://www.tiktok.com/oembed?url=${encodeURIComponent(videoData.originalUrl)}`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        return {
+                            title: data.title || 'TikTok Video',
+                            author: data.author_name || '',
+                            duration: '',
+                            thumbnail: data.thumbnail_url || '',
+                            description: '',
+                            publishDate: ''
+                        };
+                    }
+                } catch (error) {
+                    console.log('TikTok oEmbed failed, using fallback');
+                }
+
+                return {
+                    title: 'TikTok Video',
+                    author: '',
+                    duration: '',
+                    thumbnail: '',
+                    description: 'TikTok video',
+                    publishDate: ''
+                };
+            }
+
+            async fetchTwitterMetadata(videoData) {
+                try {
+                    const response = await fetch(`https://publish.twitter.com/oembed?url=${encodeURIComponent(videoData.originalUrl)}`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        return {
+                            title: data.author_name ? `Tweet by ${data.author_name}` : 'Twitter Video',
+                            author: data.author_name || '',
+                            duration: '',
+                            thumbnail: '',
+                            description: '',
+                            publishDate: ''
+                        };
+                    }
+                } catch (error) {
+                    console.log('Twitter oEmbed failed, using fallback');
+                }
+
+                return {
+                    title: 'Twitter/X Video',
+                    author: '',
+                    duration: '',
+                    thumbnail: '',
+                    description: 'Twitter/X video',
+                    publishDate: ''
+                };
+            }
+
+            async getBasicMetadata(videoData) {
+                return {
+                    title: videoData.title,
+                    author: '',
+                    duration: '',
+                    thumbnail: videoData.thumbnail,
+                    description: videoData.description,
+                    publishDate: ''
+                };
+            }
+
+            formatDuration(seconds) {
+                if (!seconds) return '';
+                const hours = Math.floor(seconds / 3600);
+                const minutes = Math.floor((seconds % 3600) / 60);
+                const secs = seconds % 60;
+
+                if (hours > 0) {
+                    return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+                } else {
+                    return `${minutes}:${secs.toString().padStart(2, '0')}`;
+                }
+            }
+
+            getCachedMetadata(key) {
+                try {
+                    const cached = localStorage.getItem(key);
+                    if (!cached) return null;
+
+                    const { data, timestamp } = JSON.parse(cached);
+                    if (Date.now() - timestamp < this.cacheTimeout) {
+                        return data;
+                    } else {
+                        localStorage.removeItem(key);
+                    }
+                } catch (error) {
+                    console.error('Error reading cache:', error);
+                }
+                return null;
+            }
+
+            setCachedMetadata(key, data) {
+                try {
+                    localStorage.setItem(key, JSON.stringify({
+                        data,
+                        timestamp: Date.now()
+                    }));
+                } catch (error) {
+                    console.error('Error setting cache:', error);
+                }
+            }
+        }
+
+        // ==================== ENHANCED VIDEO PLAYER CONTROLLER ====================
+        class VideoPlayerController {
+            constructor(videoManager) {
+                this.videoManager = videoManager;
+                this.videoPlayer = document.getElementById('videoPlayer');
+                this.currentVideoTitle = document.getElementById('currentVideoTitle');
+                this.currentVideoDescription = document.getElementById('currentVideoDescription');
+                this.currentPlatformBadge = document.getElementById('currentPlatformBadge');
+                this.fallbackMessage = document.getElementById('fallbackMessage');
+                this.metadataService = new VideoMetadataService();
+                this.setupFallbackOptions();
+            }
+
+            async loadVideo(video) {
+                if (!video) return;
+
+                this.videoManager.loadVideoById(video.id);
+                this.fallbackMessage.style.display = 'none';
+
+                // Show loading state
+                this.currentVideoTitle.textContent = 'Loading...';
+                this.currentVideoDescription.textContent = 'Fetching video information...';
+
+                let embedUrl = video.url || "";
+                let badgeClass = "";
+                let badgeText = "";
+
+                // Determine platform and set appropriate embed URL and badge
+                switch (video.type) {
+                    case "youtube":
+                        embedUrl = video.url;
+                        badgeClass = "badge-youtube";
+                        badgeText = "YouTube";
+                        break;
+                    case "youtube_playlist":
+                        embedUrl = video.url;
+                        badgeClass = "badge-youtube";
+                        badgeText = "YouTube Playlist";
+                        break;
+                    case "drive":
+                        embedUrl = video.url;
+                        badgeClass = "badge-drive";
+                        badgeText = "Google Drive";
+                        break;
+                    case "vimeo":
+                        embedUrl = video.url;
+                        badgeClass = "badge-vimeo";
+                        badgeText = "Vimeo";
+                        break;
+                    case "dailymotion":
+                        embedUrl = video.url;
+                        badgeClass = "badge-dailymotion";
+                        badgeText = "Dailymotion";
+                        break;
+                    case "facebook":
+                        embedUrl = video.url;
+                        badgeClass = "badge-facebook";
+                        badgeText = "Facebook";
+                        break;
+                    case "instagram":
+                        embedUrl = video.url;
+                        badgeClass = "badge-instagram";
+                        badgeText = "Instagram";
+                        break;
+                    case "tiktok":
+                        embedUrl = video.url;
+                        badgeClass = "badge-tiktok";
+                        badgeText = "TikTok";
+                        break;
+                    case "twitter":
+                        embedUrl = video.url;
+                        badgeClass = "badge-twitter";
+                        badgeText = "Twitter/X";
+                        break;
+                    case "twitch":
+                        embedUrl = video.url;
+                        badgeClass = "badge-twitch";
+                        badgeText = "Twitch";
+                        break;
+                    case "streamable":
+                        embedUrl = video.url;
+                        badgeClass = "badge-streamable";
+                        badgeText = "Streamable";
+                        break;
+                    case "dropbox":
+                        embedUrl = video.url;
+                        badgeClass = "badge-dropbox";
+                        badgeText = "Dropbox";
+                        break;
+                    case "photos":
+                        embedUrl = video.url;
+                        badgeClass = "badge-photos";
+                        badgeText = "Google Photos";
+                        break;
+                    case "direct":
+                        // For direct video files, use a video element instead of iframe
+                        this.loadDirectVideo(video);
+                        return;
+                    default:
+                        embedUrl = video.url;
+                        badgeClass = "badge-other";
+                        badgeText = video.type.charAt(0).toUpperCase() + video.type.slice(1);
+                }
+
+                // Set up loading timeout and error handling
+                const loadingTimeout = setTimeout(() => {
+                    this.showFallbackMessage(video);
+                }, 10000);
+
+                this.videoPlayer.onload = () => {
+                    clearTimeout(loadingTimeout);
+                    this.videoPlayer.style.display = 'block';
+                };
+
+                this.videoPlayer.onerror = () => {
+                    clearTimeout(loadingTimeout);
+                    this.handleEmbedError(video);
+                };
+
+                // Load the video
+                this.videoPlayer.src = embedUrl;
+                this.videoPlayer.style.display = 'block';
+
+                // Update UI with video information
+                this.currentVideoTitle.textContent = video.title;
+                this.currentVideoDescription.textContent = video.description;
+                this.currentPlatformBadge.className = `platform-badge ${badgeClass}`;
+                this.currentPlatformBadge.textContent = badgeText;
+
+                this.setupFallbackOptions(video);
+
+                // Fetch and update with enhanced metadata
+                this.fetchAndUpdateMetadata(video);
+            }
+
+            loadDirectVideo(video) {
+                // Replace iframe with video element for direct video files
+                const videoContainer = this.videoPlayer.parentElement;
+                const videoElement = document.createElement('video');
+                videoElement.controls = true;
+                videoElement.autoplay = true;
+                videoElement.style.width = '100%';
+                videoElement.style.height = '100%';
+                videoElement.style.position = 'absolute';
+                videoElement.style.top = '0';
+                videoElement.style.left = '0';
+                
+                const source = document.createElement('source');
+                source.src = video.url;
+                source.type = this.getVideoMimeType(video.url);
+                
+                videoElement.appendChild(source);
+                videoContainer.appendChild(videoElement);
+                
+                // Hide the iframe
+                this.videoPlayer.style.display = 'none';
+                
+                // Update UI
+                this.currentVideoTitle.textContent = video.title;
+                this.currentVideoDescription.textContent = video.description;
+                this.currentPlatformBadge.className = 'platform-badge badge-other';
+                this.currentPlatformBadge.textContent = 'Direct Video';
+            }
+
+            getVideoMimeType(url) {
+                const extension = url.split('.').pop().toLowerCase();
+                const mimeTypes = {
+                    'mp4': 'video/mp4',
+                    'webm': 'video/webm',
+                    'ogg': 'video/ogg',
+                    'mov': 'video/quicktime',
+                    'mkv': 'video/x-matroska',
+                    'flv': 'video/x-flv',
+                    'avi': 'video/x-msvideo'
+                };
+                return mimeTypes[extension] || 'video/mp4';
+            }
+
+            async fetchAndUpdateMetadata(video) {
+                try {
+                    const metadata = await this.metadataService.fetchMetadata(video);
+                    
+                    // Update UI with enhanced metadata
+                    if (metadata.title && metadata.title !== video.title) {
+                        this.currentVideoTitle.textContent = metadata.title;
+                    }
+                    
+                    if (metadata.description) {
+                        this.currentVideoDescription.textContent = metadata.description;
+                    }
+                    
+                    // You could also update other fields like author, duration, etc.
+                    // based on your UI requirements
+                } catch (error) {
+                    console.error('Error fetching metadata:', error);
+                }
+            }
+
+            handleEmbedError(video) {
+                if (video.fallbackUrls && video.fallbackUrls.length > 0) {
+                    const nextUrl = video.fallbackUrls.shift();
+                    if (nextUrl) {
+                        this.videoPlayer.src = nextUrl;
+                    } else {
+                        this.showFallbackMessage(video);
+                    }
+                } else {
+                    this.showFallbackMessage(video);
+                }
+            }
+
+            showFallbackMessage(video = null) {
+                this.fallbackMessage.style.display = 'flex';
+                if (video) {
+                    this.setupFallbackOptions(video);
+                }
+            }
+
+            setupFallbackOptions(video = null) {
+                const openOriginal = document.getElementById('openOriginal');
+                const downloadVideo = document.getElementById('downloadVideo');
+
+                if (video) {
+                    openOriginal.onclick = () => {
+                        let url;
+                        switch (video.type) {
+                            case 'drive':
+                                url = `https://drive.google.com/file/d/${video.videoId}/view?usp=sharing`;
+                                break;
+                            case 'youtube_playlist':
+                                url = `https://www.youtube.com/playlist?list=${video.videoId}`;
+                                break;
+                            case 'youtube':
+                                url = `https://www.youtube.com/watch?v=${video.videoId}`;
+                                break;
+                            default:
+                                url = video.originalUrl || video.url;
+                        }
+                        window.open(url, '_blank');
+                        this.videoManager.showNotification('Opening original video...', 'success');
+                    };
+
+                    downloadVideo.onclick = () => {
+                        let url;
+                        if (video.type === 'drive') {
+                            url = `https://drive.google.com/uc?export=download&id=${video.videoId}`;
+                        } else if (video.type === 'direct') {
+                            url = video.url;
+                        } else {
+                            url = video.originalUrl || video.url;
+                        }
+                        window.open(url, '_blank');
+                        this.videoManager.showNotification('Starting download...', 'success');
+                    };
+                }
+            }
+        }
+
+        // ==================== ENHANCED VIDEO MANAGER ====================
         class VideoManager {
             constructor() {
                 this.allVideos = [];
@@ -2010,7 +2899,6 @@
                 this.services = {
                     airtable: new AirtableService('patPnJxM2TRWXuka0.087c43bbf8e133080578197ef90fbd4ab5aba7dd7b77194e54fc7a98c5707899'),
                     metadata: new VideoMetadataService(),
-                    search: null,
                     youtube: new YouTubeDataService()
                 };
                 
@@ -2019,7 +2907,6 @@
                 this.searchTimeout = null;
             }
 
-            // ==================== CORE VIDEO MANAGEMENT ====================
             async loadVideos() {
                 this.isLoading = true;
                 
@@ -2057,7 +2944,6 @@
                 }
             }
 
-            // ==================== FILTERING & SEARCH ====================
             applyFiltersAndSearch() {
                 let results = [...this.allVideos];
 
@@ -2144,7 +3030,6 @@
                 return sorted;
             }
 
-            // ==================== VIDEO SELECTION & NAVIGATION ====================
             loadVideoById(videoId) {
                 const videoIndex = this.filteredVideos.findIndex(v => v.id === videoId);
                 if (videoIndex !== -1) {
@@ -2183,7 +3068,6 @@
                 return this.loadVideoById(this.filteredVideos[prevIndex].id);
             }
 
-            // ==================== RECENTLY PLAYED MANAGEMENT ====================
             addToRecentlyPlayed(videoId) {
                 const existingIndex = this.recentlyPlayed.findIndex(v => v.id === videoId);
                 
@@ -2213,7 +3097,6 @@
                 return viewCount + (playCount * 10);
             }
 
-            // ==================== STORAGE MANAGEMENT ====================
             saveToStorage(key, data) {
                 try {
                     localStorage.setItem(key, JSON.stringify(data));
@@ -2261,7 +3144,6 @@
                 this.saveToStorage(CONFIG.STORAGE.FILTER_STATE_KEY, state);
             }
 
-            // ==================== UI UPDATES ====================
             updateUI() {
                 this.updateVideoCount();
                 this.renderPlaylist();
@@ -2358,7 +3240,6 @@
                 });
             }
 
-            // ==================== UTILITY METHODS ====================
             getThumbnailUrl(video) {
                 if (video.thumbnail) return video.thumbnail;
                 
@@ -2404,7 +3285,6 @@
                 }, 4000);
             }
 
-            // ==================== VIDEO ADDITION ====================
             async addCustomVideo(url) {
                 if (!url) {
                     this.showNotification('Please enter a video URL', 'warning');
@@ -2417,27 +3297,21 @@
                         throw new Error('Unsupported video URL format');
                     }
 
+                    // Fetch metadata for the video
+                    const metadata = await this.services.metadata.fetchMetadata(parsed);
+
                     let videoData = {
                         id: parsed.videoId,
-                        title: parsed.title,
-                        description: parsed.description,
+                        title: metadata.title || parsed.title,
+                        description: metadata.description || parsed.description,
                         type: parsed.type,
-                        duration: '--:--',
+                        duration: metadata.duration || '--:--',
                         url: parsed.embedUrl,
-                        thumbnail: parsed.thumbnail,
+                        thumbnail: metadata.thumbnail || parsed.thumbnail,
+                        author: metadata.author || '',
+                        originalUrl: parsed.originalUrl,
                         fallbackUrls: parsed.fallbackUrls || []
                     };
-
-                    // Fetch additional metadata
-                    if (parsed.type === 'youtube' && !parsed.type.includes('playlist')) {
-                        const youtubeData = await this.services.youtube.getVideoData(parsed.videoId);
-                        if (youtubeData) {
-                            videoData.title = youtubeData.title;
-                            videoData.description = youtubeData.description;
-                            videoData.thumbnail = youtubeData.thumbnail;
-                            videoData.duration = youtubeData.duration;
-                        }
-                    }
 
                     const createdVideo = await this.services.airtable.addVideo(videoData);
                     
@@ -2460,187 +3334,7 @@
             }
         }
 
-        // ==================== SUPPORTING SERVICES (KEPT FROM ORIGINAL) ====================
-        class VideoMetadataService {
-            constructor() {
-                this.cache = new Map();
-                this.cacheTimeout = 24 * 60 * 60 * 1000;
-            }
-
-            detectPlatform(url) {
-                if (!url) return 'other';
-                const urlLower = url.toLowerCase();
-                
-                if (urlLower.includes('youtube.com') || urlLower.includes('youtu.be')) return 'youtube';
-                if (urlLower.includes('vimeo.com')) return 'vimeo';
-                if (urlLower.includes('dailymotion.com') || urlLower.includes('dai.ly')) return 'dailymotion';
-                if (urlLower.includes('facebook.com') || urlLower.includes('fb.watch')) return 'facebook';
-                if (urlLower.includes('instagram.com')) return 'instagram';
-                if (urlLower.includes('tiktok.com')) return 'tiktok';
-                if (urlLower.includes('twitter.com') || urlLower.includes('x.com')) return 'twitter';
-                if (urlLower.includes('twitch.tv')) return 'twitch';
-                if (urlLower.includes('streamable.com')) return 'streamable';
-                if (urlLower.match(/\.(mp4|webm|mov|mkv|flv|avi|ogg)$/i)) return 'direct';
-                return 'other';
-            }
-
-            extractYouTubeVideoId(url) {
-                const patterns = [
-                    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/v\/|youtube\.com\/shorts\/)([^&?\/#]+)/,
-                    /youtube\.com\/playlist\?list=([^&?\/#]+)/
-                ];
-
-                for (const pattern of patterns) {
-                    const match = url.match(pattern);
-                    if (match) return match[1];
-                }
-                return null;
-            }
-
-            async fetchMetadata(url) {
-                const cached = this.getCachedMetadata(url);
-                if (cached) return cached;
-
-                const platform = this.detectPlatform(url);
-                let metadata = {
-                    title: '',
-                    author_name: '',
-                    thumbnail_url: '',
-                    duration: 0
-                };
-
-                try {
-                    // Implementation of platform-specific metadata fetching
-                    // (same as original implementation)
-                    switch (platform) {
-                        case 'youtube':
-                            metadata = await this.fetchYouTubeMetadata(url);
-                            break;
-                        case 'vimeo':
-                            metadata = await this.fetchVimeoMetadata(url);
-                            break;
-                        // ... other platform cases
-                        default:
-                            metadata = this.getDefaultMetadata(url);
-                    }
-                } catch (error) {
-                    console.error(`Error fetching metadata for ${url}:`, error);
-                    metadata = await this.getFallbackMetadata(url, platform);
-                }
-
-                this.setCachedMetadata(url, metadata);
-                return metadata;
-            }
-
-            // ... (rest of the metadata service methods same as original)
-            getCachedMetadata(url) {
-                const cacheKey = `video_metadata_${url}`;
-                const cached = localStorage.getItem(cacheKey);
-                if (!cached) return null;
-
-                try {
-                    const { metadata, timestamp } = JSON.parse(cached);
-                    if (Date.now() - timestamp < this.cacheTimeout) {
-                        return metadata;
-                    } else {
-                        localStorage.removeItem(cacheKey);
-                    }
-                } catch (error) {
-                    console.error('Error reading cache:', error);
-                }
-                return null;
-            }
-
-            setCachedMetadata(url, metadata) {
-                const cacheKey = `video_metadata_${url}`;
-                try {
-                    localStorage.setItem(cacheKey, JSON.stringify({
-                        metadata,
-                        timestamp: Date.now()
-                    }));
-                } catch (error) {
-                    console.error('Error setting cache:', error);
-                }
-            }
-
-            async fetchYouTubeMetadata(url) {
-                try {
-                    const response = await fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`);
-                    if (!response.ok) throw new Error('YouTube oEmbed failed');
-                    
-                    const data = await response.json();
-                    return {
-                        title: data.title,
-                        author_name: data.author_name,
-                        thumbnail_url: data.thumbnail_url,
-                        duration: 0
-                    };
-                } catch (error) {
-                    const videoId = this.extractYouTubeVideoId(url);
-                    if (videoId) {
-                        return {
-                            title: `YouTube Video (${videoId})`,
-                            author_name: 'YouTube Creator',
-                            thumbnail_url: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
-                            duration: 0
-                        };
-                    }
-                    throw error;
-                }
-            }
-
-            async fetchVimeoMetadata(url) {
-                const response = await fetch(`https://vimeo.com/api/oembed.json?url=${encodeURIComponent(url)}`);
-                if (!response.ok) throw new Error('Vimeo oEmbed failed');
-                
-                const data = await response.json();
-                return {
-                    title: data.title,
-                    author_name: data.author_name,
-                    thumbnail_url: data.thumbnail_url,
-                    duration: data.duration || 0
-                };
-            }
-
-            getDefaultMetadata(url) {
-                return {
-                    title: 'Video',
-                    author_name: '',
-                    thumbnail_url: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjcwIiB2aWV3Qm94PSIwIDAgMTAwIDcwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iNzAiIGZpbGw9IiMzMzMiLz48cGF0aCBkPSJNMzUgMzBMNTAgNDVINjVMMzUiIHN0cm9rZT0iIzk5OSIgc3Ryb2tlLXdpZHRoPSIyIi8+PC9zdmc+',
-                    duration: 0
-                };
-            }
-
-            async getFallbackMetadata(url, platform) {
-                if (platform === 'youtube') {
-                    const videoId = this.extractYouTubeVideoId(url);
-                    if (videoId) {
-                        return {
-                            title: `YouTube Video (${videoId})`,
-                            author_name: 'YouTube Creator',
-                            thumbnail_url: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
-                            duration: 0
-                        };
-                    }
-                }
-                return this.getDefaultMetadata(url);
-            }
-
-            formatDuration(seconds) {
-                if (!seconds || seconds === 0) return '--:--';
-                
-                const hours = Math.floor(seconds / 3600);
-                const minutes = Math.floor((seconds % 3600) / 60);
-                const secs = seconds % 60;
-
-                if (hours > 0) {
-                    return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-                } else {
-                    return `${minutes}:${secs.toString().padStart(2, '0')}`;
-                }
-            }
-        }
-
+        // ==================== SUPPORTING SERVICES ====================
         class AirtableService {
             constructor(apiKey) {
                 this.apiKey = apiKey;
@@ -2652,7 +3346,6 @@
                 this.retryCount = 3;
                 this.retryDelay = 1000;
                 this.cache = new Map();
-                this.metadataService = new VideoMetadataService();
             }
 
             async handleRequest(url, options, retries = this.retryCount) {
@@ -2707,91 +3400,15 @@
                         author: record.fields.author || ''
                     })).filter(video => video.status !== 'inactive');
 
-                    const enrichedVideos = await this.enrichVideosWithMetadata(videos);
-                    return enrichedVideos;
+                    return videos;
                 } catch (error) {
                     console.error('Error fetching videos from Airtable:', error);
                     throw new Error('Failed to load videos from cloud storage');
                 }
             }
 
-            async enrichVideosWithMetadata(videos) {
-                const enrichmentPromises = videos.map(async (video) => {
-                    if (!video.url || (video.title && video.thumbnail && video.author)) {
-                        return video;
-                    }
-
-                    try {
-                        const metadata = await this.metadataService.fetchMetadata(video.url);
-                        
-                        if (!video.title && metadata.title) video.title = metadata.title;
-                        if (!video.author && metadata.author_name) video.author = metadata.author_name;
-                        if (!video.thumbnail && metadata.thumbnail_url) video.thumbnail = metadata.thumbnail_url;
-                        if ((!video.duration || video.duration === '--:--') && metadata.duration > 0) {
-                            video.duration = this.metadataService.formatDuration(metadata.duration);
-                        }
-                        if (!video.type || video.type === 'other') {
-                            video.type = this.metadataService.detectPlatform(video.url);
-                        }
-                    } catch (error) {
-                        console.warn(`Failed to enrich video ${video.url}:`, error);
-                    }
-
-                    return video;
-                });
-
-                return await Promise.allSettled(enrichmentPromises)
-                    .then(results => results.map(result => 
-                        result.status === 'fulfilled' ? result.value : null
-                    ).filter(video => video !== null));
-            }
-
-            async searchVideos(query, filters = {}) {
-                const cacheKey = `search-${JSON.stringify({ query, filters })}`;
-                const cached = this.cache.get(cacheKey);
-
-                if (cached && Date.now() - cached.timestamp < CONFIG.SEARCH.CACHE_DURATION) {
-                    return cached.data;
-                }
-
-                try {
-                    let allVideos = await this.getAllVideos();
-
-                    if (query && query.length >= CONFIG.SEARCH.MIN_SEARCH_LENGTH) {
-                        const searchTerms = query.toLowerCase().split(' ').filter(term => term.length > 0);
-                        allVideos = allVideos.filter(video => {
-                            return searchTerms.some(term => {
-                                return CONFIG.SEARCH.SEARCH_FIELDS.some(field => {
-                                    const fieldValue = String(video[field] || '').toLowerCase();
-                                    return fieldValue.includes(term);
-                                });
-                            });
-                        });
-                    }
-
-                    if (filters.platform && filters.platform !== 'all') {
-                        allVideos = allVideos.filter(video => video.type === filters.platform);
-                    }
-
-                    this.cache.set(cacheKey, {
-                        data: allVideos,
-                        timestamp: Date.now()
-                    });
-
-                    return allVideos;
-                } catch (error) {
-                    console.error('Error searching videos:', error);
-                    throw error;
-                }
-            }
-
             async addVideo(video) {
                 try {
-                    const existingVideo = await this.checkDuplicateVideo(video);
-                    if (existingVideo) {
-                        throw new Error('This video already exists in your library');
-                    }
-
                     const record = {
                         fields: {
                             videoId: video.id,
@@ -2841,18 +3458,6 @@
                 } catch (error) {
                     console.error('Error adding video to Airtable:', error);
                     throw error;
-                }
-            }
-
-            async checkDuplicateVideo(video) {
-                try {
-                    const filterFormula = `OR({videoId} = "${video.id}", {url} = "${video.url}")`;
-                    const url = `${this.baseUrl}?filterByFormula=${encodeURIComponent(filterFormula)}`;
-                    const data = await this.handleRequest(url, { method: 'GET', headers: this.headers });
-                    return data.records && data.records.length > 0 ? data.records[0] : null;
-                } catch (error) {
-                    console.error('Error checking duplicate video:', error);
-                    return null;
                 }
             }
 
@@ -2957,148 +3562,11 @@
                 this.cache.set(cacheKey, { data: fallbackData, timestamp: Date.now() });
                 return fallbackData;
             }
-
-            formatDuration(duration) {
-                try {
-                    const match = duration.match(/PT(\d+H)?(\d+M)?(\d+S)?/);
-                    const hours = (match[1] ? parseInt(match[1]) : 0);
-                    const minutes = (match[2] ? parseInt(match[2]) : 0);
-                    const seconds = (match[3] ? parseInt(match[3]) : 0);
-                    if (hours > 0) return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-                    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-                } catch (error) {
-                    return '--:--';
-                }
-            }
-        }
-
-        // ==================== VIDEO URL PARSER (SAME AS ORIGINAL) ====================
-        class VideoURLParser {
-            static parseYouTube(url) {
-                const patterns = [
-                    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/v\/|youtube\.com\/shorts\/)([^&?\/#]+)/,
-                    /youtube\.com\/playlist\?list=([^&?\/#]+)/
-                ];
-
-                for (const pattern of patterns) {
-                    const match = url.match(pattern);
-                    if (match) {
-                        const videoId = match[1];
-                        if (url.includes('playlist')) {
-                            return {
-                                id: `playlist-${videoId}`,
-                                type: 'youtube_playlist',
-                                embedUrl: `https://www.youtube.com/embed/videoseries?list=${videoId}&autoplay=1&modestbranding=1&rel=0&playsinline=1`,
-                                thumbnail: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjcwIiB2aWV3Qm94PSIwIDAgMTAwIDcwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iNzAiIGZpbGw9IiNmMTBhMGIiLz48dGV4dCB4PSI1MCIgeT0iMzUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxMCIgZmlsbD0id2hpdGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiPllvdVR1YmUgUGxheWxpc3Q8L3RleHQ+PC9zdmc+',
-                                title: 'YouTube Playlist'
-                            };
-                        } else {
-                            const embedUrls = [
-                                `https://www.youtube.com/embed/${videoId}?autoplay=1&modestbranding=1&rel=0&playsinline=1&origin=${encodeURIComponent(window.location.origin)}`,
-                                `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&modestbranding=1&rel=0&playsinline=1`,
-                                `https://www.youtube.com/embed/${videoId}?autoplay=1&origin=*`
-                            ];
-                            return {
-                                id: videoId,
-                                type: 'youtube',
-                                embedUrl: embedUrls[0],
-                                fallbackUrls: embedUrls.slice(1),
-                                thumbnail: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
-                                title: 'YouTube Video'
-                            };
-                        }
-                    }
-                }
-                return null;
-            }
-
-            static parseGoogleDrive(url) {
-                const patterns = [
-                    /drive\.google\.com\/file\/d\/([^\/]+)/,
-                    /drive\.google\.com\/open\?id=([^&]+)/,
-                    /drive\.google\.com\/uc\?id=([^&]+)/,
-                    /drive\.google\.com\/uc\?export=download&id=([^&]+)/
-                ];
-
-                for (const pattern of patterns) {
-                    const match = url.match(pattern);
-                    if (match) {
-                        const fileId = match[1];
-                        return {
-                            id: fileId,
-                            type: 'drive',
-                            embedUrl: `https://drive.google.com/file/d/${fileId}/preview`,
-                            thumbnail: `https://drive.google.com/thumbnail?id=${fileId}&sz=w400`,
-                            title: 'Google Drive Video'
-                        };
-                    }
-                }
-                return null;
-            }
-
-            // ... (other platform parsers remain the same as original)
-            static parseVimeo(url) {
-                const patterns = [
-                    /vimeo\.com\/(\d+)/,
-                    /player\.vimeo\.com\/video\/(\d+)/
-                ];
-
-                for (const pattern of patterns) {
-                    const match = url.match(pattern);
-                    if (match) {
-                        const videoId = match[1];
-                        return {
-                            id: videoId,
-                            type: 'vimeo',
-                            embedUrl: `https://player.vimeo.com/video/${videoId}?autoplay=1&title=0&byline=0&portrait=0`,
-                            thumbnail: `https://vumbnail.com/${videoId}.jpg`,
-                            title: 'Vimeo Video'
-                        };
-                    }
-                }
-                return null;
-            }
-
-            static parseURL(url) {
-                const parsers = [
-                    this.parseYouTube,
-                    this.parseGoogleDrive,
-                    this.parseVimeo,
-                    // ... other parsers
-                ];
-
-                for (const parser of parsers) {
-                    const result = parser.call(this, url);
-                    if (result) {
-                        return {
-                            videoId: result.id,
-                            type: result.type,
-                            embedUrl: result.embedUrl,
-                            originalUrl: url,
-                            thumbnail: result.thumbnail,
-                            title: result.title,
-                            description: `Video from ${result.type}`,
-                            fallbackUrls: result.fallbackUrls || []
-                        };
-                    }
-                }
-
-                const defaultSVG = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjcwIiB2aWV3Qm94PSIwIDAgMTAwIDcwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iNzAiIGZpbGw9IiMzMzMiLz48Y2lyY2xlIGN4PSI1MCIgY3k9IjM1IiByPSIyMCIgZmlsbD0iIzY2NiIvPjxwYXRoIGQ9Ik00MCAzNUw1NSA0NUw2NSAzNSIgc3Ryb2tlPSIjOTk5IiBzdHJva2Utd2lkdGg9IjMiLz48L3N2Zz4=';
-                return {
-                    videoId: `other-${Date.now()}`,
-                    type: 'other',
-                    embedUrl: url,
-                    originalUrl: url,
-                    thumbnail: defaultSVG,
-                    title: 'Custom Video',
-                    description: 'Video from unknown source',
-                    fallbackUrls: []
-                };
-            }
         }
 
         // ==================== APPLICATION INITIALIZATION ====================
         let videoManager;
+        let videoPlayerController;
 
         function createFloatingParticles() {
             const particlesContainer = document.getElementById('floatingParticles');
@@ -3123,139 +3591,6 @@
             }
         }
 
-        // ==================== VIDEO PLAYER CONTROLLER ====================
-        class VideoPlayerController {
-            constructor(videoManager) {
-                this.videoManager = videoManager;
-                this.videoPlayer = document.getElementById('videoPlayer');
-                this.currentVideoTitle = document.getElementById('currentVideoTitle');
-                this.currentVideoDescription = document.getElementById('currentVideoDescription');
-                this.currentPlatformBadge = document.getElementById('currentPlatformBadge');
-                this.fallbackMessage = document.getElementById('fallbackMessage');
-                this.setupFallbackOptions();
-            }
-
-            loadVideo(video) {
-                if (!video) return;
-
-                this.videoManager.loadVideoById(video.id);
-                this.fallbackMessage.style.display = 'none';
-
-                let embedUrl = video.url || "";
-                let badgeClass = "";
-                let badgeText = "";
-
-                switch (video.type) {
-                    case "youtube":
-                        embedUrl = video.url;
-                        badgeClass = "badge-youtube";
-                        badgeText = "YouTube";
-                        break;
-                    case "youtube_playlist":
-                        embedUrl = video.url;
-                        badgeClass = "badge-youtube";
-                        badgeText = "YouTube Playlist";
-                        break;
-                    case "drive":
-                        embedUrl = video.url;
-                        badgeClass = "badge-drive";
-                        badgeText = "Google Drive";
-                        break;
-                    case "vimeo":
-                        embedUrl = video.url;
-                        badgeClass = "badge-vimeo";
-                        badgeText = "Vimeo";
-                        break;
-                    // ... other platform cases
-                    default:
-                        embedUrl = video.url;
-                        badgeClass = "badge-other";
-                        badgeText = video.type.charAt(0).toUpperCase() + video.type.slice(1);
-                }
-
-                const loadingTimeout = setTimeout(() => {
-                    this.showFallbackMessage();
-                }, 10000);
-
-                this.videoPlayer.onload = () => clearTimeout(loadingTimeout);
-                this.videoPlayer.onerror = () => {
-                    clearTimeout(loadingTimeout);
-                    if (video.type === 'youtube' && video.fallbackUrls && video.fallbackUrls.length > 0) {
-                        const nextUrl = video.fallbackUrls.shift();
-                        if (nextUrl) {
-                            this.videoPlayer.src = nextUrl;
-                        } else {
-                            this.showFallbackMessage();
-                        }
-                    } else {
-                        this.showFallbackMessage();
-                    }
-                };
-
-                this.videoPlayer.src = embedUrl;
-                this.currentVideoTitle.textContent = video.title;
-                this.currentVideoDescription.textContent = video.description;
-                this.currentPlatformBadge.className = `platform-badge ${badgeClass}`;
-                this.currentPlatformBadge.textContent = badgeText;
-
-                this.setupFallbackOptions(video);
-
-                if (video.type === "drive") {
-                    setTimeout(() => this.checkPreviewAvailability(), 3000);
-                }
-            }
-
-            showFallbackMessage() {
-                this.fallbackMessage.style.display = 'flex';
-            }
-
-            setupFallbackOptions(video = null) {
-                const openOriginal = document.getElementById('openOriginal');
-                const downloadVideo = document.getElementById('downloadVideo');
-
-                if (video) {
-                    openOriginal.onclick = () => {
-                        let url;
-                        switch (video.type) {
-                            case 'drive':
-                                url = `https://drive.google.com/file/d/${video.videoId}/view?usp=sharing`;
-                                break;
-                            case 'youtube_playlist':
-                                url = `https://www.youtube.com/playlist?list=${video.videoId}`;
-                                break;
-                            case 'youtube':
-                                url = `https://www.youtube.com/watch?v=${video.videoId}`;
-                                break;
-                            default:
-                                url = video.url;
-                        }
-                        window.open(url, '_blank');
-                        this.videoManager.showNotification('Opening original video...', 'success');
-                    };
-
-                    downloadVideo.onclick = () => {
-                        let url;
-                        if (video.type === 'drive') {
-                            url = `https://drive.google.com/uc?export=download&id=${video.videoId}`;
-                            if (video.alternateUrl && this.fallbackMessage.style.display === 'flex') {
-                                url = video.alternateUrl;
-                            }
-                        } else {
-                            url = video.url;
-                        }
-                        window.open(url, '_blank');
-                        this.videoManager.showNotification('Starting download...', 'success');
-                    };
-                }
-            }
-
-            checkPreviewAvailability() {
-                // Implementation for checking preview availability
-                // (same as original implementation)
-            }
-        }
-
-        // ==================== EVENT HANDLERS ====================
         function setupEventListeners() {
             const videoSearch = document.getElementById('videoSearch');
             const sortOptions = document.getElementById('sortOptions');
@@ -3426,9 +3761,6 @@
                 }
             });
         }
-
-        // ==================== INITIALIZATION ====================
-        let videoPlayerController;
 
         async function init() {
             createFloatingParticles();
